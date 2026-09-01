@@ -1,6 +1,6 @@
 'use strict';
 
-const { ModalBuilder, ActionRowBuilder, TextInputBuilder, TextInputStyle, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { ModalBuilder, ActionRowBuilder, TextInputBuilder, TextInputStyle, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder } = require('discord.js');
 const paymentMethods = require('../config/paymentMethods');
 const permissions = require('../core/permissions');
 const cfg = require('../config');
@@ -26,6 +26,17 @@ module.exports = {
         footer: { text: cfg.branding.footer },
       }],
       components: [
+        new ActionRowBuilder().addComponents(
+          new StringSelectMenuBuilder()
+            .setCustomId('payment_select')
+            .setPlaceholder('اختر طريقة دفع لإدارتها...')
+            .addOptions(methods.length ? methods.slice(0, 25).map(m => ({
+              label: m.label.slice(0, 100),
+              value: m.id,
+              emoji: m.emoji,
+              description: m.active === false ? 'معطلة' : 'مفعلة',
+            })) : [{ label: 'لا توجد طرق دفع', value: 'none' }]),
+        ),
         new ActionRowBuilder().addComponents(
           new ButtonBuilder().setCustomId('payment_add').setLabel('➕ إضافة طريقة').setStyle(ButtonStyle.Success),
         ),
