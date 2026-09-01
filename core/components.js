@@ -159,7 +159,7 @@ module.exports = {
 
   installmentPaymentButton(order) {
     const installment = order.payment?.installment;
-    if (!installment?.enabled || installment.paidCount >= installment.count) return null;
+    if (!installment?.enabled || installment.paidCount >= installment.count || !['payment_pending', 'awaiting_payment'].includes(order.status)) return null;
     return new ActionRowBuilder().addComponents(
       new ButtonBuilder()
         .setCustomId(`installment_pay_${order.id}`)
