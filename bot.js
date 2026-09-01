@@ -184,6 +184,9 @@ client.once('clientReady', async () => {
     } else {
       console.log('✅ تم التحقق: جميع الـ IDs المحددة في .env موجودة وصحيحة في هذا السيرفر.\n');
     }
+
+    const ticketHandler = require('./handlers/ticketHandler');
+    ticketHandler.restoreReminderTimers(client);
   } catch (err) {
     console.error('[Bot] فشل التحقق من السيرفر:', err.message);
     console.error('تحقق من أن GUILD_ID صحيح وأن البوت داخل هذا السيرفر.\n');
