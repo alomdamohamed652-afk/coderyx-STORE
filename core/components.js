@@ -145,6 +145,56 @@ module.exports = {
   },
 
   // ───────────────────────────────────
+  //   CUSTOMER HISTORY / ORDER CONTROLS
+  // ───────────────────────────────────
+
+  customerHistoryButton(orderId) {
+    return new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId(`customer_history_${orderId}`)
+        .setLabel('👤 تاريخ العميل')
+        .setStyle(ButtonStyle.Secondary),
+    );
+  },
+
+  installmentPaymentButton(order) {
+    const installment = order.payment?.installment;
+    if (!installment?.enabled || installment.paidCount >= installment.count || !['payment_pending', 'awaiting_payment'].includes(order.status)) return null;
+    return new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId(`installment_pay_${order.id}`)
+        .setLabel(`💵 تسجيل قسط (${installment.paidCount}/${installment.count})`)
+        .setStyle(ButtonStyle.Primary),
+    );
+  },
+
+  installmentPaymentModal(order) {
+    const modal = new ModalBuilder()
+      .setCustomId(`installment_modal_${order.id}`)
+      .setTitle('تسجيل دفعة تقسيط');
+
+    const amountInput = new TextInputBuilder()
+      .setCustomId('installment_amount')
+      .setLabel('قيمة القسط المدفوع')
+      .setStyle(TextInputStyle.Short)
+      .setRequired(true)
+      .setPlaceholder(String(order.payment?.installment?.amountPerInstallment || ''));
+
+    const noteInput = new TextInputBuilder()
+      .setCustomId('installment_note')
+      .setLabel('ملاحظة (اختياري)')
+      .setStyle(TextInputStyle.Short)
+      .setRequired(false)
+      .setPlaceholder('رقم التحويل أو ملاحظة');
+
+    modal.addComponents(
+      new ActionRowBuilder().addComponents(amountInput),
+      new ActionRowBuilder().addComponents(noteInput),
+    );
+    return modal;
+  },
+
+  // ───────────────────────────────────
   //   CLOSE CONFIRM: تأكيد الحذف الفعلي
   //   (يظهر فقط لمن يملك صلاحية الحذف)
   // ───────────────────────────────────
@@ -220,10 +270,26 @@ module.exports = {
       .setRequired(false)
       .setPlaceholder('مثال: عميل دائم');
 
+    const installmentEnabled = new TextInputBuilder()
+      .setCustomId('installment_enabled')
+      .setLabel('تقسيط؟ اكتب نعم أو لا')
+      .setStyle(TextInputStyle.Short)
+      .setRequired(false)
+      .setPlaceholder('لا');
+
+    const installmentCount = new TextInputBuilder()
+      .setCustomId('installment_count')
+      .setLabel('عدد الأقساط')
+      .setStyle(TextInputStyle.Short)
+      .setRequired(false)
+      .setPlaceholder('مثال: 3');
+
     modal.addComponents(
       new ActionRowBuilder().addComponents(priceInput),
       new ActionRowBuilder().addComponents(discountInput),
       new ActionRowBuilder().addComponents(reasonInput),
+      new ActionRowBuilder().addComponents(installmentEnabled),
+      new ActionRowBuilder().addComponents(installmentCount),
     );
 
     return modal;

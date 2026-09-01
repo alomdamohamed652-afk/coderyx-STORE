@@ -1,0 +1,6 @@
+node_modules/
+.env
+.bot.lock
+orders/_db.json
+orders/_payment_methods.json
+orders/_transcripts/

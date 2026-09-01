@@ -210,6 +210,11 @@ module.exports = {
     if (payment.discountAmount) paymentLines.push(`**الخصم:** -${payment.discountAmount} (${payment.discountReason ?? 'بدون سبب محدد'})`);
     if (payment.finalPrice != null) paymentLines.push(`**السعر النهائي:** ${payment.finalPrice}`);
     paymentLines.push(`**حالة الدفع:** ${payment.paid ? '✅ مدفوع' : '⏳ غير مدفوع'}`);
+    if (payment.installment?.enabled) {
+      const i = payment.installment;
+      paymentLines.push(`**التقسيط:** ${i.paidCount || 0}/${i.count} × ${i.amountPerInstallment}`);
+      if (i.installmentPaidTotal) paymentLines.push(`**المدفوع بالأقساط:** ${i.installmentPaidTotal}`);
+    }
 
     const embed = new EmbedBuilder()
       .setColor(statusInfo?.color ?? B.colorWarn)
@@ -283,6 +288,7 @@ module.exports = {
       lines.push(`**الخصم:** -${p.discountAmount} (${p.discountReason ?? 'بدون سبب محدد'})`);
     }
     lines.push(`**السعر النهائي:** ${p.finalPrice ?? '—'}`);
+    if (p.installment?.enabled) lines.push(`**التقسيط:** ${p.installment.paidCount || 0}/${p.installment.count} × ${p.installment.amountPerInstallment}`);
 
     return base(B.colorWarn)
       .setTitle('💰 تم تحديد سعر طلبك')
@@ -329,6 +335,42 @@ module.exports = {
     return base(B.colorSuccess)
       .setTitle('💳 تم تأكيد الدفع')
       .setDescription(lines.join('\n'));
+  },
+
+  unclaimedReminder(ticket) {
+    const typeLabel = {
+      purchase: 'شراء منتج', support: 'دعم فني', inquiry: 'استفسار',
+      custom_dev: 'تطوير خاص', report: 'بلاغ',
+    }[ticket.type] || ticket.type;
+    return base(B.colorWarn)
+      .setTitle('⏰ تذكرة بانتظار الاستلام')
+      .setDescription(
+        `التذكرة **#${ticket.displayNumber || '000'}** (${typeLabel}) لم يستلمها أحد حتى الآن.
+` +
+        'يرجى من الفريق المخصص مراجعتها واستلامها.'
+      )
+      .addFields(
+        { name: '👤 العميل', value: `<@${ticket.userId}>`, inline: true },
+        { name: '🎫 رقم التذكرة', value: `#${ticket.displayNumber || '000'}`, inline: true },
+      );
+  },
+
+  customerHistory(customer, orders) {
+    const paidOrders = orders.filter(o => o.payment?.paid);
+    const totalSpent = paidOrders.reduce((sum, o) => sum + Number(o.payment?.finalPrice || 0), 0);
+    const lines = orders.slice(-8).reverse().map(o => {
+      const p = o.payment || {};
+      return `${o.id} • ${o.status} • ${p.finalPrice ?? '—'}`;
+    }).join('\n') || 'لا توجد طلبات سابقة.';
+    return base(B.color)
+      .setTitle('👤 تاريخ العميل')
+      .setDescription(`<@${customer.id}>\n\`${customer.username || '—'}\``)
+      .addFields(
+        { name: '🧾 الطلبات', value: String(orders.length), inline: true },
+        { name: '💳 المدفوع', value: String(paidOrders.length), inline: true },
+        { name: '💰 إجمالي الإنفاق', value: totalSpent.toLocaleString('ar-EG'), inline: true },
+        { name: '📋 آخر الطلبات', value: lines.slice(0, 1024) },
+      );
   },
 
   // ───────────────────────────────────

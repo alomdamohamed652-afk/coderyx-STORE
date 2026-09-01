@@ -56,6 +56,9 @@ module.exports = {
     if (order.status === 'payment_pending' && !order.payment?.paid) {
       rows.push(components.confirmPaymentButton(order));
     }
+    const installmentRow = components.installmentPaymentButton(order);
+    if (installmentRow) rows.push(installmentRow);
+    rows.push(components.customerHistoryButton(order.id));
 
     return rows;
   },
