@@ -151,7 +151,7 @@ class Database {
     return Object.values(this._read().orders).find(o => o.customer?.ticketChannelId === channelId) ?? null;
   }
 
-  saveTicket({ channelId, userId, type, orderId = null }) {
+  saveTicket({ channelId, userId, type, orderId = null, userUsername = null }) {
     const db = this._read();
     const number = this._nextTicketNumber();
     db.tickets[channelId] = {
@@ -159,6 +159,7 @@ class Database {
       number,
       displayNumber: String(number).padStart(3, '0'),
       userId,
+      userUsername,
       type,
       orderId,
       claimedBy: null,
