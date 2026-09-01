@@ -7,6 +7,7 @@ const dashboardHandler   = require('./dashboardHandler');
 const productEditHandler = require('./productEditHandler');
 const planEditHandler    = require('./planEditHandler');
 const productWizardHandler = require('./productWizardHandler');
+const paymentAdminHandler = require('./paymentAdminHandler');
 
 // ─────────────────────────────────────────
 //   Interaction Handler
@@ -52,6 +53,9 @@ module.exports = {
     // ─── Modal Submit ──────────────────
     if (interaction.isModalSubmit()) {
       const id = interaction.customId;
+
+      if (id === 'payment_modal_add') return paymentAdminHandler.submitAdd(interaction);
+      if (id.startsWith('payment_modal_edit_')) return paymentAdminHandler.submitEdit(interaction);
 
       if (id.startsWith('price_modal_'))    return orderInteractionHandler.handlePriceModalSubmit(interaction);
       if (id.startsWith('installment_modal_')) return orderInteractionHandler.handleInstallmentModalSubmit(interaction);
@@ -99,6 +103,7 @@ module.exports = {
         case 'dash_edit_product':  return dashboardHandler.handleEditProduct(interaction);
         case 'dash_view_products': return dashboardHandler.handleViewProducts(interaction);
         case 'dash_statistics':    return dashboardHandler.handleStatistics(interaction);
+        case 'dash_payment_methods': return dashboardHandler.handlePaymentMethods(interaction);
         case 'dash_settings':      return dashboardHandler.handleSettings(interaction);
         case 'dash_back_to_list':  return dashboardHandler.handleBackToList(interaction);
 
@@ -108,6 +113,7 @@ module.exports = {
         case 'wizard_open_step3': return productWizardHandler.openStep3(interaction);
 
         // ─── Customer-facing: زر "تحت الصيانة" ───
+        case 'payment_add': return paymentAdminHandler.openAdd(interaction);
         case 'product_maintenance_notice':
           return interaction.reply({ content: '🛠️ هذا المنتج تحت الصيانة حاليًا ولا يمكن شراؤه في الوقت الحالي.', ephemeral: true });
       }
@@ -130,6 +136,10 @@ module.exports = {
 
       // أزرار اختيار طريقة الدفع للعميل (داخل تذكرته)
       // تُطابق ديناميكيًا مع config/paymentMethods.js — أي طريقة تُضاف هناك تعمل هنا تلقائيًا
+      if (id.startsWith('payment_edit_')) return paymentAdminHandler.edit(interaction);
+      if (id.startsWith('payment_toggle_')) return paymentAdminHandler.toggle(interaction);
+      if (id.startsWith('payment_delete_')) return paymentAdminHandler.remove(interaction);
+
       if (id.startsWith('pay_')) {
         const paymentMethods = require('../config/paymentMethods');
         const matched = paymentMethods.getAll().find(m => id.startsWith(`pay_${m.id}_`));
