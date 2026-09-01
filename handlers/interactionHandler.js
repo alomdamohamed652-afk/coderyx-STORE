@@ -172,6 +172,7 @@ module.exports = {
 
         // ─── Dashboard: اختيار منتج للتعديل ───
         case 'dash_select_product': return dashboardHandler.handleProductSelected(interaction);
+        case 'payment_select': return paymentAdminHandler.select(interaction);
       }
 
       // قائمة تغيير حالة الأوردر (روم اللوج)
