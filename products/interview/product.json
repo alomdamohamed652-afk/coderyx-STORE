@@ -1,0 +1,56 @@
+{
+  "id": "interview",
+  "status": "active",
+  "name": "Interview System",
+  "description": "نظام مقابلات احترافي لسيرفرات FiveM و RP — طابور ذكي، قبول/رفض/تخطي، Whitelist، تقارير تفصيلية",
+  "color": "#C9A84C",
+  "features": [
+    "طابور مقابلات ذكي (Queue System)",
+    "قبول / رفض / تخطي بضغطة واحدة",
+    "نظام Blacklist متعدد المراحل",
+    "تتبع حضور المحاورين تلقائيًا",
+    "تقرير نهاية الجلسة تفصيلي",
+    "إشعارات DM تلقائية للمتقدمين"
+  ],
+  "plans": [
+    {
+      "name": "Basic",
+      "price": 50,
+      "currency": "SAR",
+      "features": [
+        "طابور مقابلات ذكي",
+        "قبول / رفض / تخطي",
+        "إشعارات DM",
+        "لوق الأحداث"
+      ]
+    },
+    {
+      "name": "Professional",
+      "price": 100,
+      "currency": "SAR",
+      "features": [
+        "كل مميزات Basic",
+        "نظام Blacklist",
+        "تتبع حضور المحاورين",
+        "تقرير نهاية الجلسة",
+        "حتى 15 غرفة مقابلة"
+      ]
+    },
+    {
+      "name": "Enterprise",
+      "price": 180,
+      "currency": "SAR",
+      "features": [
+        "كل مميزات Professional",
+        "تقرير الغائبين",
+        "نظام أولوية (Instant Queue)",
+        "دعم أولوية مدى الحياة",
+        "تحديثات مجانية"
+      ]
+    }
+  ],
+  "availability": "active",
+  "updatedAt": "2026-06-27T22:14:11.309Z",
+  "visibility": "visible",
+  "badge": null
+}
