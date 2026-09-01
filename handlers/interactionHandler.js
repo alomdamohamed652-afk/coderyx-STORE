@@ -54,6 +54,7 @@ module.exports = {
       const id = interaction.customId;
 
       if (id.startsWith('price_modal_'))    return orderInteractionHandler.handlePriceModalSubmit(interaction);
+      if (id.startsWith('installment_modal_')) return orderInteractionHandler.handleInstallmentModalSubmit(interaction);
       if (id.startsWith('feedback_modal_')) return orderInteractionHandler.handleFeedbackModalSubmit(interaction);
 
       // ─── Dashboard: Wizard إضافة منتج (3 خطوات متتالية) ───
@@ -137,6 +138,9 @@ module.exports = {
 
       // زر "تم الدفع" للمسؤول عن المالية (روم اللوج)
       if (id.startsWith('confirm_payment_')) return orderInteractionHandler.handleConfirmPayment(interaction);
+
+      if (id.startsWith('installment_pay_')) return orderInteractionHandler.handleInstallmentPayment(interaction);
+      if (id.startsWith('customer_history_')) return orderInteractionHandler.handleCustomerHistory(interaction);
 
       // أزرار تقييم النجوم (1-5) — تظهر للعميل بعد تأكيد الدفع
       const feedbackMatch = id.match(/^feedback_([1-5])_/);
