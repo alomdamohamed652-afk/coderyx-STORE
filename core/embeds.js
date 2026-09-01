@@ -210,6 +210,11 @@ module.exports = {
     if (payment.discountAmount) paymentLines.push(`**الخصم:** -${payment.discountAmount} (${payment.discountReason ?? 'بدون سبب محدد'})`);
     if (payment.finalPrice != null) paymentLines.push(`**السعر النهائي:** ${payment.finalPrice}`);
     paymentLines.push(`**حالة الدفع:** ${payment.paid ? '✅ مدفوع' : '⏳ غير مدفوع'}`);
+    if (payment.installment?.enabled) {
+      const i = payment.installment;
+      paymentLines.push(`**التقسيط:** ${i.paidCount || 0}/${i.count} × ${i.amountPerInstallment}`);
+      if (i.installmentPaidTotal) paymentLines.push(`**المدفوع بالأقساط:** ${i.installmentPaidTotal}`);
+    }
 
     const embed = new EmbedBuilder()
       .setColor(statusInfo?.color ?? B.colorWarn)
@@ -283,6 +288,7 @@ module.exports = {
       lines.push(`**الخصم:** -${p.discountAmount} (${p.discountReason ?? 'بدون سبب محدد'})`);
     }
     lines.push(`**السعر النهائي:** ${p.finalPrice ?? '—'}`);
+    if (p.installment?.enabled) lines.push(`**التقسيط:** ${p.installment.paidCount || 0}/${p.installment.count} × ${p.installment.amountPerInstallment}`);
 
     return base(B.colorWarn)
       .setTitle('💰 تم تحديد سعر طلبك')
