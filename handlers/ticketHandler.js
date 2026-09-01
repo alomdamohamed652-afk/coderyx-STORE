@@ -19,9 +19,28 @@ function safeChannelPart(value) {
   return String(value || 'staff').toLowerCase().replace(/[^a-z0-9-_]/g, '-').replace(/-+/g, '-').slice(0, 18) || 'staff';
 }
 
+const TYPE_CODES = {
+  purchase: 'p',
+  support: 's',
+  inquiry: 'i',
+  custom_dev: 'cd',
+  report: 'r',
+};
+
 function baseTicketName(ticket, claimer = null) {
   const number = ticket?.displayNumber || '000';
-  return claimer ? `ticket-${number}-${safeChannelPart(claimer.username)}` : `ticket-${number}`;
+  const typeCode = TYPE_CODES[ticket?.type] || 't';
+
+  // Discord text-channel names are normalized to lowercase and do not safely
+  // support the requested "|" / "•" separators, so use Discord-safe hyphens.
+  // Open:  p-123-opener
+  // Claimed: p-123-claimed-claimer
+  if (claimer) {
+    return `${typeCode}-${number}-claimed-${safeChannelPart(claimer.username)}`.slice(0, 100);
+  }
+
+  const opener = ticket?.userUsername || 'customer';
+  return `${typeCode}-${number}-${safeChannelPart(opener)}`.slice(0, 100);
 }
 
 function reminderDelayMs() {
@@ -113,7 +132,7 @@ module.exports = {
       permissionOverwrites: overwrites,
     });
 
-    const ticket = db.saveTicket({ channelId: channel.id, userId: user.id, type });
+    const ticket = db.saveTicket({ channelId: channel.id, userId: user.id, type, userUsername: user.username });
     await channel.setName(baseTicketName(ticket)).catch(() => {});
 
     interaction.followUp({
