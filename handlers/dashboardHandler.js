@@ -126,6 +126,11 @@ module.exports = {
     });
   },
 
+  async handlePaymentMethods(interaction) {
+    const paymentAdminHandler = require('./paymentAdminHandler');
+    return paymentAdminHandler.open(interaction);
+  },
+
   async handleSettings(interaction) {
     if (!this.checkAccess(interaction)) return;
 
