@@ -174,9 +174,8 @@ module.exports = {
     const target = Number(updated.payment?.finalPrice || 0);
 
     if (total >= target && target > 0) {
-      db.setPayment(orderId, { paid: true, paidAt: new Date().toISOString() });
       const orderHandler = require('./orderHandler');
-      await orderHandler.changeOrderStatus(interaction.client, orderId, 'paid', interaction.user.id);
+      await orderHandler.confirmPaymentReceived(interaction.client, orderId, interaction.user.id);
     } else {
       const orderHandler = require('./orderHandler');
       await orderHandler.refreshLogMessage(interaction.client, orderId);
