@@ -180,9 +180,12 @@ module.exports = {
 <title>Transcript - ${escapeHtml(meta.channelName ?? channel.name)}</title>
 <style>
   body { background:#313338; color:#dbdee1; font-family: 'Segoe UI', Tahoma, Arial, sans-serif; margin:0; padding:0; }
-  .header { background:#2b2d31; padding:20px 30px; border-bottom:1px solid #1e1f22; }
-  .header h1 { margin:0 0 8px; font-size:20px; color:#fff; }
-  .header .meta-row { font-size:13px; color:#949ba4; margin:2px 0; }
+  .header { background:#2b2d31; padding:14px 22px; border-bottom:1px solid #1e1f22; }
+  .header h1 { margin:0 0 8px; font-size:18px; color:#fff; }
+  .meta-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; }
+  .meta-card { background:#1e1f22; border-radius:6px; padding:7px 9px; font-size:12px; color:#b5bac1; }
+  .meta-card strong { display:block; color:#f2f3f5; font-size:12px; margin-bottom:2px; }
+  .header .meta-row { font-size:12px; color:#949ba4; margin:2px 0; }
   .messages { max-width: 900px; margin: 0 auto; padding: 20px 30px; }
   .message { display:flex; gap:14px; padding:10px 0; }
   .avatar { width:40px; height:40px; border-radius:50%; flex-shrink:0; }
@@ -215,15 +218,15 @@ module.exports = {
 </head>
 <body>
   <div class="header">
-    <h1>📜 سجل تذكرة — #${escapeHtml(meta.channelName ?? channel.name)}</h1>
-    <div class="meta-row">نوع التذكرة: ${escapeHtml(meta.type ?? '—')}</div>
-    <div class="meta-row">صاحب التذكرة: ${escapeHtml(cleanMentionSyntax(meta.openedBy) ?? '—')}</div>
-    <div class="meta-row">تاريخ الفتح: ${escapeHtml(meta.openedAt ?? '—')}</div>
-    ${meta.claimedBy ? `<div class="meta-row">استُلمت بواسطة: ${escapeHtml(cleanMentionSyntax(meta.claimedBy))}</div>` : ''}
-    ${meta.requestedCloseBy ? `<div class="meta-row">طلب الإغلاق: ${escapeHtml(meta.requestedCloseBy)}${meta.requestedCloseAt ? ' — ' + escapeHtml(meta.requestedCloseAt) : ''}</div>` : ''}
-    <div class="meta-row">تاريخ الإغلاق (الحذف الفعلي): ${escapeHtml(meta.closedAt ?? '—')}</div>
-    <div class="meta-row">أكّد الحذف: ${escapeHtml(meta.closedBy ?? '—')}</div>
-    <div class="meta-row">عدد الرسائل: ${messages.length}</div>
+    <h1>📜 Transcript • #${escapeHtml(meta.ticketNumber ?? meta.channelName ?? channel.name)}</h1>
+    <div class="meta-grid">
+      <div class="meta-card"><strong>🎫 التذكرة</strong>#${escapeHtml(meta.ticketNumber ?? "—")}</div>
+      <div class="meta-card"><strong>📌 النوع</strong>${escapeHtml(meta.type ?? "—")}</div>
+      <div class="meta-card"><strong>💬 الرسائل</strong>${messages.length}</div>
+      <div class="meta-card"><strong>👤 العميل</strong>${escapeHtml(cleanMentionSyntax(meta.openedBy) ?? "—")}</div>
+      <div class="meta-card"><strong>🙋 المستلم</strong>${escapeHtml(cleanMentionSyntax(meta.claimedBy) ?? "لم تُستلم")}</div>
+      <div class="meta-card"><strong>🔒 الإغلاق</strong>${escapeHtml(meta.closedAt ?? "—")}</div>
+    </div>
   </div>
   <div class="messages">
     ${rows || '<p style="color:#949ba4;">لا توجد رسائل في هذه التذكرة.</p>'}
