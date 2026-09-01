@@ -185,6 +185,28 @@ module.exports = {
     await interaction.editReply({ content: '✅ تم تسجيل القسط ' + updated.payment.installment.paidCount + '/' + updated.payment.installment.count + ' بقيمة ' + amount + '.' });
   },
 
+  async handleCustomerHistory(interaction) {
+    const orderId = extractOrderId(interaction.customId, 'customer_history_');
+    const order = db.getOrder(orderId);
+    if (!order) return interaction.reply({ content: '❌ هذا الأوردر غير موجود.', ephemeral: true });
+
+    if (!permissions.isDashboardAdmin(interaction.member, cfg)) {
+      return interaction.reply({ content: '❌ تاريخ العملاء متاح للإدارة المصرح لها فقط.', ephemeral: true });
+    }
+
+    const orders = db.getOrdersByCustomer(order.customer.discordId);
+    const embeds = require('../core/embeds');
+    const customer = {
+      id: order.customer.discordId,
+      username: order.customer.username,
+    };
+
+    return interaction.reply({
+      embeds: [embeds.customerHistory(customer, orders)],
+      ephemeral: true,
+    });
+  },
+
   async handleConfirmPayment(interaction) {
     const orderId = extractOrderId(interaction.customId, 'confirm_payment_');
     const order    = db.getOrder(orderId);
