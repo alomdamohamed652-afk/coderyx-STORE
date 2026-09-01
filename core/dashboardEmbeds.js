@@ -10,6 +10,8 @@ const registry = require('./registry');
 // ─────────────────────────────────────────
 
 const B = cfg.branding;
+const number = value => Number(value || 0).toLocaleString('ar-EG');
+const money = (value, currency = '') => `${number(value)}${currency ? ' ' + currency : ''}`;
 
 function base(color = B.color) {
   return new EmbedBuilder()
@@ -36,12 +38,12 @@ module.exports = {
       .setTitle('🛠️ Codryx Product Dashboard')
       .setDescription('لوحة إدارة شاملة لكل منتجات Codryx — كل التعديلات تُطبَّق فورًا بدون إعادة تشغيل البوت.')
       .addFields(
-        { name: '📦 إجمالي المنتجات', value: String(all.length), inline: true },
-        { name: '🟢 متاحة', value: String(registry.countByAvailability('active')), inline: true },
-        { name: '🛠️ تحت الصيانة', value: String(registry.countByAvailability('maintenance')), inline: true },
-        { name: '👁️‍🗨️ مخفية', value: String(registry.countByVisibility('hidden')), inline: true },
-        { name: '🧾 إجمالي الطلبات', value: String(orders.length), inline: true },
-        { name: '💰 إجمالي المبيعات', value: String(totalSales), inline: true },
+        { name: '📦 إجمالي المنتجات', value: number(all.length), inline: true },
+        { name: '🟢 متاحة', value: number(registry.countByAvailability('active')), inline: true },
+        { name: '🛠️ تحت الصيانة', value: number(registry.countByAvailability('maintenance')), inline: true },
+        { name: '👁️‍🗨️ مخفية', value: number(registry.countByVisibility('hidden')), inline: true },
+        { name: '🧾 إجمالي الطلبات', value: number(orders.length), inline: true },
+        { name: '💰 إجمالي المبيعات', value: money(totalSales), inline: true },
       )
       .setFooter({ text: `${B.footer} • آخر تحديث` });
   },
@@ -92,10 +94,10 @@ module.exports = {
       .addFields(
         { name: '🏷️ الفئة', value: product.category ?? '—', inline: true },
         { name: '🔖 الإصدار', value: product.version ?? '—', inline: true },
-        { name: '💰 يبدأ من', value: `${minPrice} ${product.plans[0]?.currency ?? ''}`, inline: true },
+        { name: '💰 يبدأ من', value: money(minPrice, product.plans[0]?.currency ?? ''), inline: true },
         { name: '📋 الخطط', value: planSummary || '—' },
-        { name: '🧾 عدد الطلبات', value: String(productOrders.length), inline: true },
-        { name: '🔢 الترتيب', value: String(product.order), inline: true },
+        { name: '🧾 عدد الطلبات', value: number(productOrders.length), inline: true },
+        { name: '🔢 الترتيب', value: number(product.order + 1), inline: true },
         { name: '🕐 آخر تحديث', value: `<t:${Math.floor(new Date(product.updatedAt).getTime() / 1000)}:R>`, inline: true },
       )
       .setFooter({ text: `${B.footer} • ${product.id}` })
@@ -138,9 +140,9 @@ module.exports = {
     return base(B.colorSuccess)
       .setTitle('📊 إحصائيات المتجر')
       .addFields(
-        { name: '📦 عدد المنتجات', value: String(all.length), inline: true },
-        { name: '🧾 عدد الطلبات', value: String(orders.length), inline: true },
-        { name: '💰 إجمالي المبيعات', value: String(totalSales), inline: true },
+        { name: '📦 عدد المنتجات', value: number(all.length), inline: true },
+        { name: '🧾 عدد الطلبات', value: number(orders.length), inline: true },
+        { name: '💰 إجمالي المبيعات', value: money(totalSales), inline: true },
         { name: '🔥 الأكثر مبيعًا', value: topProduct ? `${topProduct.name} (${maxCount} طلب)` : '—', inline: true },
         { name: '📉 الأقل مبيعًا', value: leastProduct ? `${leastProduct.name} (${minCount} طلب)` : '—', inline: true },
         { name: '💳 طلبات مدفوعة', value: String(paidOrders.length), inline: true },
