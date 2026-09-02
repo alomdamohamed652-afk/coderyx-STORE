@@ -155,17 +155,24 @@ async function sendTeamFeedbackRequest(channel, meta, teamName) {
   const customerId = extractUserId(meta.openedBy);
   if (!customerId) return;
 
+  if (!meta.claimedBy) {
+    console.warn('[teamFeedback] لا يوجد مسؤول مستلم؛ لن يتم إنشاء تقييم لفريق غير مستلم.');
+    return;
+  }
+
   try {
     const user = await channel.client.users.fetch(customerId);
+    const staffMention = `<@${meta.claimedBy}>`;
     const embed = new EmbedBuilder()
       .setColor(0xe11d48)
       .setTitle('⭐ تقييم تجربتك')
       .setDescription(
-        `نشكرك على ثقتك بنا ❤️\\n\\n` +
-        `تم إغلاق تذكرتك في **${teamName}**.\\n` +
-        'نريد تقييم تجربتك مع الفريق الذي تعامل مع طلبك.\\n\\n' +
-        '**اختر تقييمًا واحدًا فقط من 1 إلى 5 نجوم.**\\n' +
-        'بعد اختيارك سيتم إغلاق التقييم ولن يمكنك تغييره.'
+        `نشكرك على ثقتك بنا ❤️\n\n` +
+        `تم إغلاق تذكرتك بعد التعامل مع **${teamName}**.\n\n` +
+        `👨‍💼 **المسؤول:** ${staffMention}\n` +
+        `🎫 **التذكرة:** #${meta.ticketNumber || '—'}\n\n` +
+        '**اختر تقييمًا واحدًا فقط من 1 إلى 5 نجوم.**\n' +
+        '🔒 بعد اختيار التقييم سيتم إغلاق التقييم نهائيًا ولن يمكنك تغييره.'
       )
       .setFooter({ text: `${channel.guild?.name || 'Discord Server'} • Team Feedback` })
       .setTimestamp();
@@ -190,11 +197,11 @@ async function logTeamFeedback(client, feedback) {
       .setTitle(`⭐ تقييم جديد • ${feedback.teamName || 'الفريق'}`)
       .setDescription('تقييم تجربة العميل مع الفريق المتخصص في التذكرة.')
       .addFields(
-        { name: '👤 العميل', value: feedback.customerUsername || 'غير معروف', inline: true },
+        { name: '👤 العميل', value: `<@${feedback.customerId}>`, inline: true },
         { name: '🏷️ الفريق', value: feedback.teamName || '—', inline: true },
         { name: '⭐ التقييم', value: `${'⭐'.repeat(feedback.rating)} **${feedback.rating}/5**`, inline: true },
         { name: '🎫 التذكرة', value: `#${feedback.ticketNumber || '—'}`, inline: true },
-        { name: '👨‍💼 المستلم', value: feedback.staffUsername || 'لم تُستلم', inline: true },
+        { name: '👨‍💼 المسؤول', value: feedback.staffId ? `<@${feedback.staffId}>` : '—', inline: true },
       )
       .setFooter({ text: `${channel.guild?.name || 'Discord'} • Team Feedback` })
       .setTimestamp();
@@ -439,6 +446,11 @@ module.exports = {
       return true;
     }
 
+    if (!ticket.claimedBy) {
+      await interaction.reply({ content: '❌ لا يمكن تقييم التذكرة لأنها لم تُستلم من مسؤول.', ephemeral: true }).catch(() => {});
+      return true;
+    }
+
     if (db.getTeamFeedback(ticketId, 'team')) {
       await interaction.reply({ content: '✅ تم تسجيل تقييمك بالفعل، شكرًا لك.', ephemeral: true }).catch(() => {});
       return true;
@@ -466,6 +478,7 @@ module.exports = {
     await logTeamFeedback(interaction.client, feedback);
 
     await interaction.update({ components: [] }).catch(() => {});
+    await interaction.message?.edit?.({ components: [] }).catch(() => {});
     await interaction.followUp({
       content: `✅ تم تسجيل تقييمك للفريق: **${rating}/5 ⭐**`,
       ephemeral: true,
