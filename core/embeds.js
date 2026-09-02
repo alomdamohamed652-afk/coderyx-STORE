@@ -97,9 +97,12 @@ module.exports = {
         `🔎 **شرح التذكرة**\n${t.desc}`
       );
 
-    // صورة المتجر/الشعار في أعلى الـEmbed — لا نستخدم Avatar صاحب التذكرة.
-    const logoUrl = this._safeImage(B.logo);
-    if (logoUrl) embed.setThumbnail(logoUrl);
+    // صورة العميل في أعلى الـEmbed.
+    // Discord.js يوفر رابط الـAvatar مباشرة من interaction.user.
+    const clientAvatar = typeof user.displayAvatarURL === 'function'
+      ? user.displayAvatarURL({ extension: 'png', size: 256 })
+      : null;
+    if (clientAvatar) embed.setThumbnail(clientAvatar);
 
     // الـBanner المتحرك يبقى صورة الـEmbed الرئيسية أسفل المحتوى.
     const bannerUrl = this._safeImage(B.ticketBanner);
