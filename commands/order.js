@@ -19,8 +19,8 @@ module.exports = {
     ),
 
   async execute(interaction) {
-    if (!permissions.isOwner(interaction.member, cfg) && !permissions.isDev(interaction.member, cfg)) {
-      return interaction.reply({ content: '❌ هذا الأمر لفريق التطوير فقط.', ephemeral: true });
+    if (!permissions.isAdmin(interaction.member, cfg) && !permissions.isFinance(interaction.member, cfg)) {
+      return interaction.reply({ content: '❌ هذا الأمر للإدارة أو المالية فقط.', ephemeral: true });
     }
 
     const orderId = interaction.options.getString('id').toUpperCase();
