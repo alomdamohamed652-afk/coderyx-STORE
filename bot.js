@@ -14,53 +14,7 @@ const panelHandler       = require('./handlers/panelHandler');
 const db                 = require('./core/database');
 const embeds             = require('./core/embeds');
 
-// ─────────────────────────────────────────
-//   حماية من تشغيل أكثر من نسخة من البوت
-//   في نفس الوقت (سبب شائع لمشاكل التفاعلات
-//   المكررة وظهور البانل مرتين)
-// ─────────────────────────────────────────
 
-const LOCK_FILE = path.join(__dirname, '.bot.lock');
-
-function checkSingleInstance() {
-  if (fs.existsSync(LOCK_FILE)) {
-    const oldPid = fs.readFileSync(LOCK_FILE, 'utf8').trim();
-    let stillRunning = false;
-
-    // التحقق هل الـ process القديم لسه شغال فعليًا أم أنه lock قديم متبقٍ من إغلاق غير نظيف
-    try {
-      process.kill(Number(oldPid), 0); // لا يقتل العملية، فقط يفحص وجودها
-      stillRunning = true;
-    } catch {
-      stillRunning = false;
-    }
-
-    if (stillRunning) {
-      console.error('\n🔴 يوجد نسخة أخرى من البوت تعمل الآن بالفعل!');
-      console.error(`   Process ID: ${oldPid}`);
-      console.error('   هذا سبب شائع لمشاكل: ظهور البانل مرتين، وأخطاء "Unknown interaction".');
-      console.error('   أغلق النسخة القديمة (Ctrl+C في نافذتها أو Task Manager) ثم أعد التشغيل.\n');
-      process.exit(1);
-    } else {
-      console.warn('[Bot] ⚠️ تم العثور على lock قديم من إغلاق غير نظيف — يتم تجاوزه.');
-    }
-  }
-
-  fs.writeFileSync(LOCK_FILE, String(process.pid), 'utf8');
-
-  // تنظيف الـ lock عند إغلاق البوت بشكل طبيعي
-  const cleanup = () => {
-    try { fs.unlinkSync(LOCK_FILE); } catch {}
-    process.exit(0);
-  };
-  process.on('SIGINT', cleanup);
-  process.on('SIGTERM', cleanup);
-  process.on('exit', () => {
-    try { fs.unlinkSync(LOCK_FILE); } catch {}
-  });
-}
-
-checkSingleInstance();
 
 // ─────────────────────────────────────────
 //   Codryx Store Bot
