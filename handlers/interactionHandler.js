@@ -65,7 +65,8 @@ module.exports = {
       if (id === 'category_add_modal') return categoryAdminHandler.submitAdd(interaction);
       if (id === 'payment_modal_add') return paymentAdminHandler.submitAdd(interaction);
       if (id.startsWith('payment_modal_edit_')) return paymentAdminHandler.submitEdit(interaction);
-      if (id === 'ticket_member_add') return ticketHandler.handleMemberModal(interaction, 'add');
+      if (id.startsWith('dash_modal_category_')) return productEditHandler.handleCategoryModalSubmit(interaction);
+            if (id === 'ticket_member_add') return ticketHandler.handleMemberModal(interaction, 'add');
       if (id === 'ticket_member_remove') return ticketHandler.handleMemberModal(interaction, 'remove');
       if (id === 'ticket_rename_modal') return ticketHandler.handleRenameModal(interaction);
       if (id === 'ticket_staff_transfer_modal') return ticketHandler.handleStaffTransferModal(interaction);
@@ -144,6 +145,7 @@ module.exports = {
       if (id.startsWith('dash_p_avail_'))    return productEditHandler.toggleAvailability(interaction);
       if (id.startsWith('dash_p_vis_'))      return productEditHandler.toggleVisibility(interaction);
       if (id.startsWith('dash_p_badge_'))    return productEditHandler.openBadgeSelect(interaction);
+      if (id.startsWith('dash_p_category_')) return productEditHandler.openCategoryModal(interaction);
       if (id.startsWith('dash_p_name_'))     return productEditHandler.openTextModal(interaction, 'name');
       if (id.startsWith('dash_p_desc_'))     return productEditHandler.openTextModal(interaction, 'desc');
       if (id.startsWith('dash_p_price_'))    return productEditHandler.openTextModal(interaction, 'price');
