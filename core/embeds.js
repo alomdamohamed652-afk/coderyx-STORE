@@ -87,16 +87,23 @@ module.exports = {
     const t = types[type] ?? { emoji: '📩', label: 'طلب', color: B.color, desc: '' };
 
     const embed = base(t.color)
+      .setAuthor({ name: B.name, iconURL: this._safeImage(B.logo) || undefined })
       .setTitle(`${t.emoji} تذكرة ${t.label}`)
       .setDescription(
         `أهلًا ${user} 👋\n\n` +
-        `تم فتح تذكرة **${t.label}** بنجاح.\n` +
-        `> ${t.desc}`
+        `📌 **تم إنشاء تذكرتك**\n` +
+        `شكرًا لتواصلك معنا، سيقوم الفريق المختص بمراجعة التذكرة داخل القناة.\n\n` +
+        `**نوع التذكرة**\n${t.label}\n\n` +
+        `🔎 **شرح التذكرة**\n${t.desc}`
       );
 
-    if (B.ticketBanner) {
-      embed.setImage(B.ticketBanner);
-    }
+    // صورة المتجر/الشعار في أعلى الـEmbed — لا نستخدم Avatar صاحب التذكرة.
+    const logoUrl = this._safeImage(B.logo);
+    if (logoUrl) embed.setThumbnail(logoUrl);
+
+    // الـBanner المتحرك يبقى صورة الـEmbed الرئيسية أسفل المحتوى.
+    const bannerUrl = this._safeImage(B.ticketBanner);
+    if (bannerUrl) embed.setImage(bannerUrl);
 
     return embed;
   },
