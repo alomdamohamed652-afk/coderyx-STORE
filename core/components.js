@@ -38,24 +38,76 @@ module.exports = {
   },
 
   // ───────────────────────────────────
-  //   PRODUCT SELECT: اختيار منتج
+  //   STORE CATEGORIES: فئات المتجر الهرمية
   // ───────────────────────────────────
 
-  productSelect(products) {
-    const options = products.map(p => ({
-      label: p.name,
-      value: p.id,
-      description: p.description.slice(0, 100),
+  categorySelect(categories, parentId = 'root') {
+    const options = categories.slice(0, 25).map(c => ({
+      label: c.name.slice(0, 100),
+      value: c.id,
+      description: 'تصفح الفئة والمنتجات بداخلها',
+      emoji: c.emoji || '📁',
     }));
 
     return new ActionRowBuilder().addComponents(
       new StringSelectMenuBuilder()
-        .setCustomId('select_product')
-        .setPlaceholder('اختر المنتج...')
+        .setCustomId(`store_category_${parentId}`)
+        .setPlaceholder('📁 اختر الفئة...')
         .addOptions(options)
     );
   },
 
+  productSelect(products, categoryId = 'all') {
+    const options = products.slice(0, 25).map(p => ({
+      label: p.name.slice(0, 100),
+      value: p.id,
+      description: (p.description || 'منتج Codryx').slice(0, 100),
+    }));
+
+    return new ActionRowBuilder().addComponents(
+      new StringSelectMenuBuilder()
+        .setCustomId(categoryId === 'all' ? 'select_product' : `store_product_${categoryId}`)
+        .setPlaceholder('🛒 اختر المنتج...')
+        .addOptions(options)
+    );
+  },
+
+  storeBackButton(parentId = 'root') {
+    return new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId(`store_back_${parentId}`)
+        .setLabel('↩️ رجوع للفئة السابقة')
+        .setStyle(ButtonStyle.Secondary)
+    );
+  },
+
+  categoryAdminButtons() {
+    return [
+      new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId('category_add').setLabel('➕ إضافة فئة').setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId('category_refresh').setLabel('🔄 تحديث').setStyle(ButtonStyle.Secondary),
+      )
+    ];
+  },
+
+  categoryAddModal() {
+    const modal = new ModalBuilder().setCustomId('category_add_modal').setTitle('إضافة فئة متجر');
+    const nameInput = new TextInputBuilder()
+      .setCustomId('category_name').setLabel('اسم الفئة').setStyle(TextInputStyle.Short).setRequired(true)
+      .setPlaceholder('مثال: FiveM');
+    const parentInput = new TextInputBuilder()
+      .setCustomId('category_parent').setLabel('مسار الفئة الأب (اختياري)').setStyle(TextInputStyle.Short).setRequired(false)
+      .setPlaceholder('مثال: FiveM');
+    const emojiInput = new TextInputBuilder()
+      .setCustomId('category_emoji').setLabel('إيموجي الفئة (اختياري)').setStyle(TextInputStyle.Short).setRequired(false)
+      .setPlaceholder('📁');
+    modal.addComponents(
+      new ActionRowBuilder().addComponents(nameInput),
+      new ActionRowBuilder().addComponents(parentInput),
+      new ActionRowBuilder().addComponents(emojiInput),
+    );
+    return modal;
+  },
   // ───────────────────────────────────
   //   PLAN SELECT: اختيار خطة
   // ───────────────────────────────────
