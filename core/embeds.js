@@ -115,18 +115,25 @@ module.exports = {
   //   STORE CATEGORIES: عرض التصنيفات الهرمية
   // ───────────────────────────────────
 
-  storeCategories(categoryPaths, parentPath = []) {
-    const lines = categoryPaths.map((path, i) => {
+  storeCategories(categoryPaths, parentPath = [], products = []) {
+    const categoryLines = categoryPaths.map((path, i) => {
       const name = path.at(-1);
       const prefix = path.length > 1 ? `📁 ${path.slice(0, -1).join(' / ')}` : '📁 تصنيف رئيسي';
-      return `**${i + 1}. ${name}**\\n> ${prefix}`;
-    }).join('\\n\\n');
+      return `**${i + 1}. ${name}**\n> ${prefix}`;
+    }).join('\n\n');
 
-    const breadcrumb = parentPath.length ? `\\n\\n**المسار:** ${parentPath.join(' > ')}` : '';
+    const productLines = products.length
+      ? '\n\n**📦 المنتجات داخل هذا التصنيف**\n' + products.slice(0, 12).map((p, i) => {
+          const minPrice = Math.min(...p.plans.map(pl => Number(pl.price) || 0));
+          return `**${i + 1}. ${p.name}** — يبدأ من **${minPrice} ${p.plans[0]?.currency || ''}**`;
+        }).join('\n')
+      : '';
 
+    const breadcrumb = parentPath.length ? `\n\n**المسار:** ${parentPath.join(' > ')}` : '';
+    const body = categoryLines || 'لا توجد تصنيفات فرعية داخل هذا المستوى.';
     return base()
       .setTitle('🗂️ تصفح منتجات Codryx')
-      .setDescription(`اختر التصنيف المناسب للوصول إلى المنتجات.${breadcrumb}\\n\\n${lines}`);
+      .setDescription(`اختر التصنيف المناسب للوصول إلى المنتجات.${breadcrumb}\n\n${body}${productLines}`);
   },
 
   // ───────────────────────────────────
@@ -147,7 +154,7 @@ module.exports = {
     return base()
       .setTitle('📦 منتجات Codryx')
       .setDescription(
-        (categoryPath.length ? `**المسار:** ${categoryPath.join(' > ')}\\n\\n` : '') +
+        (categoryPath.length ? `**المسار:** ${categoryPath.join(' > ')}\n\n` : '') +
         'اختر المنتج الذي تريد شراؤه:\n\n' + list
       );
   },
