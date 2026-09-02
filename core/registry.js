@@ -151,8 +151,8 @@ class ProductRegistry {
       const name = String(product.category || 'عام').trim() || 'عام';
       const id = name
         .toLowerCase()
-        .replace(/\\s+/g, '-')
-        .replace(/[^a-z0-9\\u0600-\\u06ff_-]/gi, '')
+        .replace(/\s+/g, '-')
+        .replace(/[^a-z0-9\u0600-\u06ff_-]/gi, '')
         .slice(0, 90) || 'general';
 
       if (!map.has(id)) {
