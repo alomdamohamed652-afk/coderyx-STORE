@@ -36,7 +36,7 @@ module.exports = {
         .addFields(
           { name: '👤 المنفذ', value: actorId ? `<@${actorId}> • ${clean(actorName)}` : 'النظام', inline: true },
           { name: '🎫 التذكرة', value: ticket ? `#${clean(ticket.displayNumber)} • ${clean(ticket.type)}` : '—', inline: true },
-          { name: '🧾 الطلب', value: order?.id ? `\`${clean(order.id)}\`` • ${clean(order.status)}` : '—', inline: true },
+          { name: '🧾 الطلب', value: order?.id ? ('`' + clean(order.id) + '` • ' + clean(order.status)) : '—', inline: true },
           { name: '👥 العميل', value: customerId ? `<@${customerId}>` : '—', inline: true },
           { name: '👨‍💼 المسؤول', value: staffId ? `<@${staffId}>` : '—', inline: true },
           { name: '📌 التفاصيل', value: Object.entries(details).map(([k,v]) => `**${k}:** ${clean(v)}`).join('\n').slice(0,1024) || '—', inline: false },
