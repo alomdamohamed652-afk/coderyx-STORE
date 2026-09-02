@@ -1,5 +1,6 @@
 {
   "id": "leave",
+  "category": "Management",
   "status": "active",
   "name": "Leave Management System",
   "description": "نظام احترافي لإدارة إجازات أفراد السيرفر، يوفر تقديم طلبات الإجازة، مراجعتها، اعتمادها أو رفضها، مع تتبع كامل للإجازات وسجل تفصيلي لجميع العمليات.",
