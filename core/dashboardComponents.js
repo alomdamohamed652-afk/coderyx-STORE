@@ -287,6 +287,24 @@ module.exports = {
     return modal;
   },
 
+  wizardCategorySelect(categories = []) {
+    const options = [
+      { label: 'عام / بدون تصنيف', value: 'none', emoji: '🏠', description: 'وضع المنتج في التصنيف العام' },
+      ...categories.slice(0, 24).map(c => ({
+        label: String(c.name).slice(0, 100),
+        value: c.id,
+        description: c.path.join(' > ').slice(0, 100),
+      })),
+    ];
+
+    return new ActionRowBuilder().addComponents(
+      new StringSelectMenuBuilder()
+        .setCustomId('wizard_category_select')
+        .setPlaceholder('🗂️ اختر تصنيف المنتج...')
+        .addOptions(options)
+    );
+  },
+
   // ───────────────────────────────────
   //   PLAN SELECT (لاختيار خطة للتعديل)
   // ───────────────────────────────────
