@@ -85,11 +85,10 @@ function validateEnv() {
 
   const requiredLists = {
     'OWNER_ROLE_IDS':   cfg.roles.owner,
+    'ADMIN_ROLE_IDS':   cfg.roles.admin,
     'SUPPORT_ROLE_IDS': cfg.roles.support,
     'DEV_ROLE_IDS':     cfg.roles.dev,
-    'CLOSE_ROLE_IDS':   cfg.roles.close,
     'FINANCE_ROLE_IDS': cfg.roles.finance,
-    'DASHBOARD_ROLE_IDS': cfg.roles.dashboard,
   };
 
   const missing = [];
@@ -149,6 +148,7 @@ client.once('clientReady', async () => {
 
     const roleChecks = [
       { label: 'OWNER_ROLE_IDS',   ids: cfg.roles.owner },
+      { label: 'ADMIN_ROLE_IDS',   ids: cfg.roles.admin },
       { label: 'SUPPORT_ROLE_IDS', ids: cfg.roles.support },
       { label: 'DEV_ROLE_IDS',     ids: cfg.roles.dev },
       { label: 'CLOSE_ROLE_IDS',   ids: cfg.roles.close },
