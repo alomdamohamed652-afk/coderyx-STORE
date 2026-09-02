@@ -21,7 +21,6 @@ module.exports = {
   buildPurchaseComponents(ticket, selectorRows = []) {
     return [
       ...selectorRows,
-      components.storeProductSearchButton(),
       components.ticketActions(!!ticket?.claimedBy),
       components.ticketAdminButton(),
     ].slice(0, 5);
@@ -44,7 +43,7 @@ module.exports = {
     const products = registry.getVisible();
     return interaction.channel.send({
       embeds: [embeds.store(products)],
-      components: this.buildPurchaseComponents(ticket, [components.productSelect(products)]),
+      components: this.buildPurchaseComponents(ticket, [components.productSelect(products), components.storeProductSearchButton()]),
     });
   },
 
