@@ -5,6 +5,7 @@ const {
   ButtonBuilder, ButtonStyle,
 } = require('discord.js');
 const registry = require('../core/registry');
+const categoryRegistry = require('../core/categoryRegistry');
 const dashEmbeds = require('../core/dashboardEmbeds');
 const dashComponents = require('../core/dashboardComponents');
 
@@ -56,8 +57,8 @@ module.exports = {
       .setCustomId('description').setLabel('الوصف').setStyle(TextInputStyle.Paragraph).setRequired(true);
 
     const categoryInput = new TextInputBuilder()
-      .setCustomId('category').setLabel('الفئة').setStyle(TextInputStyle.Short).setRequired(false)
-      .setPlaceholder('مثال: FiveM / RP');
+      .setCustomId('category').setLabel('مسار الفئة').setStyle(TextInputStyle.Short).setRequired(false)
+      .setPlaceholder('مثال: FiveM / Police / Emergency');
 
     const versionInput = new TextInputBuilder()
       .setCustomId('version').setLabel('رقم الإصدار').setStyle(TextInputStyle.Short).setRequired(false)
@@ -217,8 +218,11 @@ module.exports = {
 
     await interaction.deferReply({ ephemeral: true });
 
+    const category = session.data.category ? categoryRegistry.ensurePath(session.data.category) : null;
     const productData = {
       ...session.data,
+      category: category ? categoryRegistry.getPath(category.id) : null,
+      categoryId: category?.id || null,
       plans: [{ name: planName, price: planPrice, currency: planCurrency, features: planFeatures }],
     };
 
