@@ -476,6 +476,7 @@ module.exports = {
 
     feedback.ticketNumber = ticket.displayNumber;
     await logTeamFeedback(interaction.client, feedback);
+    await require('../core/audit').log(interaction.client, { action: 'Team Feedback Submitted', actorId: interaction.user.id, ticket, details: { 'المسؤول': staffUsername, 'التقييم': `${rating}/5` } });
 
     await interaction.update({ components: [] }).catch(() => {});
     await interaction.message?.edit?.({ components: [] }).catch(() => {});
