@@ -26,7 +26,7 @@ function extractUserId(value = '') {
 
 function renderContent(content = '') {
   let text = escapeHtml(content);
-  text = text.replace(/\`\`\`([\s\S]*?)\`\`\`/g, (_, code) => `<pre>\${code}</pre>`);
+  text = text.replace(/\`\`\`([\s\S]*?)\`\`\`/g, (_, code) => `<pre>${code}</pre>`);
   text = text.replace(/\`([^\`]+)\`/g, '<code>$1</code>');
   text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
   text = text.replace(/\*([^*]+)\*/g, '<em>$1</em>');
