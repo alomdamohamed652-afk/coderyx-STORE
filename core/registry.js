@@ -155,6 +155,32 @@ class ProductRegistry {
     return this.products.get(id) ?? null;
   }
 
+  // البحث بالرقم: يدعم Product ID كامل، الرقم في بداية الـID (مثل 2-...)
+  // أو رقم الترتيب الظاهر للعميل.
+  findByNumber(value) {
+    const raw = String(value ?? '').trim().toLowerCase();
+    if (!raw) return null;
+
+    const exact = this.getById(value) || this.getById(raw);
+    if (exact) return exact;
+
+    const numeric = raw.replace(/^#/, '');
+    if (/^\d+$/.test(numeric)) {
+      const byIdNumber = this.getAll().find(p => {
+        const match = String(p.id).match(/^(\d+)(?:-|$)/);
+        return match && match[1] === numeric;
+      });
+      if (byIdNumber) return byIdNumber;
+
+      const orderNumber = Number(numeric);
+      if (Number.isInteger(orderNumber) && orderNumber >= 1) {
+        return this.getAll().find(p => Number(p.order) + 1 === orderNumber) ?? null;
+      }
+    }
+
+    return this.getAll().find(p => String(p.id).toLowerCase() === raw) ?? null;
+  }
+
   count() {
     return this.products.size;
   }
