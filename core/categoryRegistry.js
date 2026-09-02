@@ -328,6 +328,31 @@ function treeLines() {
   });
 }
 
+function bootstrapFromProducts() {
+  const store = readStore();
+  let changed = false;
+
+  for (const product of registry.getAll()) {
+    const parts = normalize(product.categoryPath || product.category || '');
+    if (!parts.length || key(parts) === GENERAL_NAME) continue;
+
+    let parentId = null;
+    for (const name of parts) {
+      let category = store.categories.find(c => c.parentId === parentId && c.name.toLowerCase() === name.toLowerCase());
+      if (!category) {
+        category = createCategory(store, name, parentId);
+        changed = true;
+      }
+      parentId = category.id;
+    }
+  }
+
+  if (changed) writeStore(store);
+  syncProducts(store);
+}
+
+bootstrapFromProducts();
+
 module.exports = {
   normalize,
   key,
