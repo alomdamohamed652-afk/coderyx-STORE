@@ -3,6 +3,7 @@
 const { EmbedBuilder } = require('discord.js');
 const cfg      = require('../config');
 const registry = require('./registry');
+const categoryRegistry = require('./categoryRegistry');
 
 // ─────────────────────────────────────────
 //   Dashboard Embeds
@@ -105,6 +106,7 @@ module.exports = {
         { name: '🧾 الطلبات', value: number(productOrders.length), inline: true },
         { name: '💳 مبيعات مدفوعة', value: money(sales), inline: true },
         { name: '🔖 الإصدار', value: product.version ?? '—', inline: true },
+        { name: '📁 الفئة', value: categoryRegistry.pathForProduct(product), inline: true },
         { name: '🔢 الترتيب', value: number(Number(product.order || 0) + 1), inline: true },
         { name: '📋 تفاصيل الباقات', value: planSummary || 'لا توجد باقات.' },
       )
