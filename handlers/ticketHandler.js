@@ -31,15 +31,17 @@ function baseTicketName(ticket, claimer = null) {
   const number = ticket?.displayNumber || '000';
   const typeCode = TYPE_CODES[ticket?.type] || 't';
 
-  // Discord text-channel names are normalized to lowercase and do not safely
-  // support the requested "|" / "•" separators, so use Discord-safe hyphens.
-  // Open:  p-123-opener
-  // Claimed: p-123-claimed-claimer
+  // Discord text channels do not support the exact visual format
+  // "P | 123•MUSHI-ER", so we use the closest clean Discord-safe format.
+  // Open:    p-123-mushi-er
+  // Claimed: p-123-claimer-mushi-er
+  // The opener always stays in the name; the claimer is inserted before it.
+  const opener = ticket?.userUsername || 'customer';
+
   if (claimer) {
-    return `${typeCode}-${number}-claimed-${safeChannelPart(claimer.username)}`.slice(0, 100);
+    return `${typeCode}-${number}-${safeChannelPart(claimer.username)}-${safeChannelPart(opener)}`.slice(0, 100);
   }
 
-  const opener = ticket?.userUsername || 'customer';
   return `${typeCode}-${number}-${safeChannelPart(opener)}`.slice(0, 100);
 }
 
