@@ -50,15 +50,10 @@ module.exports = {
     db.updateTicket(interaction.channel.id, { selectedCategoryPath: child });
 
     const children = categories.getChildren(child);
-    const ticketExtras = [
-      components.ticketActions(!!db.getTicket(interaction.channel.id)?.claimedBy),
-      components.ticketAdminButton(),
-    ];
-
     if (children.length > 0) {
       return interaction.editReply({
         embeds: [embeds.storeCategories(children, child)],
-        components: [components.categorySelect(children), components.categoryBackButton(), ...ticketExtras].slice(0, 5),
+        components: [components.categorySelect(children), components.categoryBackButton()],
       });
     }
 
@@ -66,13 +61,13 @@ module.exports = {
     if (products.length === 0) {
       return interaction.editReply({
         embeds: [embeds.info('لا توجد منتجات', 'لا توجد منتجات متاحة داخل هذا التصنيف حاليًا.')],
-        components: [components.categoryBackButton(), ...ticketExtras].slice(0, 5),
+        components: [components.categoryBackButton()],
       });
     }
 
     return interaction.editReply({
       embeds: [embeds.store(products, child)],
-      components: [components.productSelect(products), components.categoryBackButton(), ...ticketExtras].slice(0, 5),
+      components: [components.productSelect(products), components.categoryBackButton()],
     });
   },
 
@@ -86,13 +81,9 @@ module.exports = {
     db.updateTicket(interaction.channel.id, { selectedCategoryPath: parent });
 
     const children = categories.getChildren(parent);
-    const ticketExtras = [
-      components.ticketActions(!!db.getTicket(interaction.channel.id)?.claimedBy),
-      components.ticketAdminButton(),
-    ];
     return interaction.editReply({
       embeds: [embeds.storeCategories(children, parent)],
-      components: [components.categorySelect(children), ...(parent.length ? [components.categoryBackButton()] : []), ...ticketExtras].slice(0, 5),
+      components: [components.categorySelect(children), ...(parent.length ? [components.categoryBackButton()] : [])],
     });
   },
 
