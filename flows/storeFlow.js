@@ -127,6 +127,7 @@ module.exports = {
     }
 
     const productId = interaction.values[0];
+    if (productId === 'none') return interaction.channel.send({ embeds: [embeds.info('لا توجد منتجات', 'لا توجد منتجات متاحة حاليًا داخل هذا القسم.')] });
     const product   = registry.getById(productId);
 
     if (!product) {
