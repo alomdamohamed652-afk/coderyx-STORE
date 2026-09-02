@@ -137,7 +137,7 @@ module.exports = {
     await interaction.reply({
       content:
         '⚙️ **إعدادات Dashboard**\n\n' +
-        `رتب الإدارة المخوّلة: ${cfg.roles.dashboard.length > 0 ? cfg.roles.dashboard.map(r => `<@&${r}>`).join(', ') : 'Owner فقط'}\n` +
+        `رتب الإدارة المخوّلة: ${cfg.roles.admin.length > 0 ? cfg.roles.admin.map(r => `<@&${r}>`).join(', ') : 'Owner فقط'}\n` +
         `عدد المنتجات: ${registry.count()}`,
       ephemeral: true,
     });
