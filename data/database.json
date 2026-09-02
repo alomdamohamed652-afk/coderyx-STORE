@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "orders": {},
+  "tickets": {},
+  "feedback": {},
+  "teamFeedback": {},
+  "panels": {},
+  "wizardSessions": {},
+  "dashboard": null,
+  "counter": 0,
+  "ticketCounter": 0
+}
