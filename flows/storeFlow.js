@@ -36,7 +36,11 @@ module.exports = {
     if (roots.length > 0) {
       return interaction.channel.send({
         embeds: [embeds.storeCategories(roots, [])],
-        components: this.buildPurchaseComponents(ticket, [components.categorySelect(roots)]).filter((_, i) => extraComponents.length ? true : true),
+        components: [
+          components.categorySelect(roots),
+          components.storeProductSearchButton(),
+          ...controls,
+        ].slice(0, 5),
       });
     }
 
