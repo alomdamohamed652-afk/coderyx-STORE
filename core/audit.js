@@ -44,9 +44,10 @@ module.exports = {
         .setFooter({ text: cfg.branding.footer + ' • Audit' })
         .setTimestamp();
 
+      const mentionUserIds = [...new Set([actorId, customerId, staffId].filter(Boolean))];
       await channel.send({
         embeds: [embed],
-        allowedMentions: { users: [actorId, customerId, staffId].filter(Boolean) },
+        allowedMentions: { users: mentionUserIds },
       });
     } catch (err) {
       console.warn('[audit] فشل إرسال Audit Log:', err.message);
