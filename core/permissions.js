@@ -43,7 +43,7 @@ module.exports = {
   canClaimType(member, cfg, ticketType) {
     if (this.isAdmin(member, cfg)) return true;
 
-    const devTypes = ['custom_dev'];
+    const devTypes = ['purchase', 'custom_dev'];
     if (devTypes.includes(ticketType)) return this.isDev(member, cfg);
 
     return this.isSupport(member, cfg);
