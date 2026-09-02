@@ -121,16 +121,16 @@ module.exports = {
 
   productSelect(products) {
     const options = products.slice(0, 25).map(p => ({
-      label: p.name,
+      label: String(p.name).slice(0, 100),
       value: p.id,
-      description: String(p.description ?? 'منتج Codryx').slice(0, 100),
+      description: `#${p.id} • ${String(p.description ?? 'منتج Codryx')}`.slice(0, 100),
     }));
 
     return new ActionRowBuilder().addComponents(
       new StringSelectMenuBuilder()
         .setCustomId('select_product')
-        .setPlaceholder('اختر المنتج...')
-        .addOptions(options)
+        .setPlaceholder('📦 اختر المنتج...')
+        .addOptions(options.length ? options : [{ label: 'لا توجد منتجات', value: 'none' }])
     );
   },
 
