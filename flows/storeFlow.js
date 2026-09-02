@@ -1,6 +1,7 @@
 'use strict';
 
 const registry    = require('../core/registry');
+const categories  = require('../core/categoryRegistry');
 const embeds      = require('../core/embeds');
 const components  = require('../core/components');
 const db           = require('../core/database');
@@ -17,19 +18,72 @@ module.exports = {
 
   // ─── Step 1: عرض المنتجات ───────────
 
-  async start(interaction, extraComponents = []) {
-    const products = registry.getVisible();
+  async start(interaction) {
+    const roots = categories.getRootCategories();
 
-    if (products.length === 0) {
+    if (roots.length > 0) {
       return interaction.channel.send({
-        embeds: [embeds.info('لا توجد منتجات', 'لا توجد منتجات متاحة حاليًا. تواصل معنا مباشرة.')],
-        components: extraComponents,
+        embeds: [embeds.storeCategories(roots, [])],
+        components: [components.categorySelect(roots)],
       });
     }
 
+    const products = registry.getVisible();
     return interaction.channel.send({
-      embeds:     [embeds.store(products)],
-      components: [components.productSelect(products), ...extraComponents],
+      embeds: [embeds.store(products)],
+      components: [components.productSelect(products)],
+    });
+  },
+
+  async handleCategorySelect(interaction) {
+    await interaction.deferUpdate();
+
+    const ticket = db.getTicket(interaction.channel.id);
+    const currentPath = Array.isArray(ticket?.selectedCategoryPath) ? ticket.selectedCategoryPath : [];
+    const selected = interaction.values[0];
+    const child = categories.getChildren(currentPath).find(p => p.at(-1) === selected);
+
+    if (!child) {
+      return interaction.editReply({ embeds: [embeds.error('التصنيف غير موجود.')], components: [] }).catch(() => {});
+    }
+
+    db.updateTicket(interaction.channel.id, { selectedCategoryPath: child });
+
+    const children = categories.getChildren(child);
+    if (children.length > 0) {
+      return interaction.editReply({
+        embeds: [embeds.storeCategories(children, child)],
+        components: [components.categorySelect(children), components.categoryBackButton()],
+      });
+    }
+
+    const products = categories.getProducts(child);
+    if (products.length === 0) {
+      return interaction.editReply({
+        embeds: [embeds.info('لا توجد منتجات', 'لا توجد منتجات متاحة داخل هذا التصنيف حاليًا.')],
+        components: [components.categoryBackButton()],
+      });
+    }
+
+    return interaction.editReply({
+      embeds: [embeds.store(products, child)],
+      components: [components.productSelect(products), components.categoryBackButton()],
+    });
+  },
+
+  async handleCategoryBack(interaction) {
+    await interaction.deferUpdate();
+
+    const ticket = db.getTicket(interaction.channel.id);
+    const currentPath = Array.isArray(ticket?.selectedCategoryPath) ? ticket.selectedCategoryPath : [];
+    const parent = currentPath.slice(0, -1);
+
+    db.updateTicket(interaction.channel.id, { selectedCategoryPath: parent });
+
+    const children = categories.getChildren(parent);
+    return interaction.editReply({
+      embeds: [embeds.storeCategories(children, parent)],
+      components: [components.categorySelect(children), ...(parent.length ? [components.categoryBackButton()] : [])],
     });
   },
 
@@ -60,7 +114,7 @@ module.exports = {
     const products = registry.getVisible();
     const disabledMenu = components.productSelect(products);
     disabledMenu.components[0].setDisabled(true);
-    await interaction.message.edit({ components: [disabledMenu] }).catch(() => {});
+    await interaction.message.edit({ components: [disabledMenu, components.categoryBackButton()] }).catch(() => {});
 
     // المنتج تحت الصيانة → نعرض التفاصيل لكن بدون إمكانية شراء فعلية
     if (product.availability === 'maintenance') {
