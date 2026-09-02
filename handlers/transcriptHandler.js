@@ -419,8 +419,7 @@ module.exports = {
 
   async sendTranscript(channel, meta = {}) {
     if (!cfg.channels.transcriptLog) {
-      console.warn('[transcriptHandler] ⚠️ TRANSCRIPT_LOG_CHANNEL_ID غير محدد في .env — لن يُرسل أي لوق');
-      return;
+      console.warn('[transcriptHandler] ⚠️ TRANSCRIPT_LOG_CHANNEL_ID غير محدد في .env — لن يُرسل ملف الترانسكريبت');
     }
 
     let filePath;
