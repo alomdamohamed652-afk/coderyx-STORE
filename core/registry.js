@@ -67,6 +67,17 @@ class ProductRegistry {
     if (!product.id)   throw new Error('الحقل "id" مطلوب');
     if (!product.name) throw new Error('الحقل "name" مطلوب');
 
+    // دعم التصنيفات الهرمية مع الحفاظ على category القديمة للتوافق.
+    if (!Array.isArray(product.categoryPath)) {
+      const rawCategory = product.categoryPath || product.category || '';
+      product.categoryPath = String(rawCategory)
+        .split(/\\s*(?:>|\\/|→)\\s*/)
+        .map(v => v.trim())
+        .filter(Boolean);
+    }
+    if (product.categoryPath.length === 0) product.categoryPath = ['عام'];
+    product.category = product.categoryPath.join(' > ');
+
     if (!Array.isArray(product.plans) || product.plans.length === 0) {
       throw new Error('يجب أن يحتوي المنتج على خطة واحدة على الأقل في "plans"');
     }
