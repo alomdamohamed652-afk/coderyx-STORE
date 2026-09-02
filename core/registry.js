@@ -71,7 +71,7 @@ class ProductRegistry {
     if (!Array.isArray(product.categoryPath)) {
       const rawCategory = product.categoryPath || product.category || '';
       product.categoryPath = String(rawCategory)
-        .split(/\\s*(?:>|\\/|→)\\s*/)
+        .split(/\s*(?:>|\/|→)\s*/)
         .map(v => v.trim())
         .filter(Boolean);
     }
