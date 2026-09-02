@@ -79,7 +79,7 @@ module.exports = {
     const rows = [];
     if (children.length) rows.push(components.categorySelect(children));
     if (products.length) rows.push(components.productSelect(products));
-    rows.push(components.categoryBackButton());
+    rows.push(components.storeCategoryNavigationButtons(true));
     return interaction.editReply({
       embeds: [embeds.storeCategories(children, child, products)],
       components: this.buildPurchaseComponents(updatedTicket, rows),
