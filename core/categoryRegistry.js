@@ -8,6 +8,7 @@ const registry = require('./registry');
 const FILE = path.resolve(cfg.products.folder, '_categories.json');
 const VERSION = 2;
 const GENERAL_NAME = 'عام';
+let memoryStore = null;
 
 function normalize(input) {
   if (Array.isArray(input)) return input.map(v => String(v).trim()).filter(Boolean);
@@ -26,13 +27,17 @@ function safeId(value) {
 }
 
 function readStore() {
+  if (memoryStore) return memoryStore;
   try {
-    if (!fs.existsSync(FILE)) return { version: VERSION, categories: [], displayMode: 'grouped', nextId: 1 };
+    if (!fs.existsSync(FILE)) {
+      memoryStore = { version: VERSION, categories: [], displayMode: 'grouped', nextId: 1 };
+      return memoryStore;
+    }
     const raw = JSON.parse(fs.readFileSync(FILE, 'utf8'));
 
     // v2
     if (Array.isArray(raw.categories)) {
-      return {
+      memoryStore = {
         version: VERSION,
         categories: raw.categories.filter(Boolean).map(c => ({
           id: safeId(c.id) || null,
@@ -45,6 +50,7 @@ function readStore() {
         displayMode: raw.displayMode === 'categories_only' ? 'categories_only' : 'grouped',
         nextId: Math.max(1, Number(raw.nextId) || 1),
       };
+      return memoryStore;
     }
 
     // v1 migration: paths were stored as strings.
@@ -78,15 +84,18 @@ function readStore() {
       if (parts.length) ensureLegacy(parts);
     }
 
-    return store;
+    memoryStore = store;
+    return memoryStore;
   } catch (err) {
     console.warn('[CategoryRegistry] فشل قراءة _categories.json:', err.message);
-    return { version: VERSION, categories: [], displayMode: 'grouped', nextId: 1 };
+    memoryStore = { version: VERSION, categories: [], displayMode: 'grouped', nextId: 1 };
+    return memoryStore;
   }
 }
 
 function writeStore(store) {
   fs.mkdirSync(path.dirname(FILE), { recursive: true });
+  memoryStore = store;
   fs.writeFileSync(FILE, JSON.stringify({
     version: VERSION,
     displayMode: store.displayMode === 'categories_only' ? 'categories_only' : 'grouped',
