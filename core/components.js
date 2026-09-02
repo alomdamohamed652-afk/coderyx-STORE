@@ -38,21 +38,42 @@ module.exports = {
   },
 
   // ───────────────────────────────────
-  //   PRODUCT SELECT: اختيار منتج
+  //   PRODUCT CATEGORIES / SELECT
   // ───────────────────────────────────
 
-  productSelect(products) {
-    const options = products.map(p => ({
-      label: p.name,
+  productCategorySelect(categories) {
+    const options = categories.slice(0, 25).map(category => ({
+      label: category.name.slice(0, 100),
+      value: category.id,
+      emoji: category.emoji || '📁',
+      description: category.description?.slice(0, 100) || 'تصفح منتجات هذه الفئة',
+    }));
+
+    return new ActionRowBuilder().addComponents(
+      new StringSelectMenuBuilder()
+        .setCustomId('select_product_category')
+        .setPlaceholder('📁 اختر فئة المنتجات...')
+        .addOptions(options)
+    );
+  },
+
+  productSelect(products, disabled = false) {
+    const options = products.slice(0, 25).map(p => ({
+      label: p.name.slice(0, 100),
       value: p.id,
-      description: p.description.slice(0, 100),
+      description: (p.description || 'تفاصيل المنتج').slice(0, 100),
     }));
 
     return new ActionRowBuilder().addComponents(
       new StringSelectMenuBuilder()
         .setCustomId('select_product')
-        .setPlaceholder('اختر المنتج...')
-        .addOptions(options)
+        .setPlaceholder('📦 اختر المنتج...')
+        .setDisabled(disabled)
+        .addOptions(options.length ? options : [{
+          label: 'لا توجد منتجات في هذه الفئة',
+          value: 'empty',
+          description: 'اختر فئة أخرى',
+        }])
     );
   },
 
