@@ -63,35 +63,34 @@ module.exports = {
   // ───────────────────────────────────
 
   productControlButtons(product) {
-    const visToggleLabel = product.visibility === 'visible' ? '🔴 إخفاء المنتج' : '👁️ إظهار المنتج';
+    const visToggleLabel = product.visibility === 'visible' ? '🔒 إخفاء' : '👁️ إظهار';
     const visToggleStyle = product.visibility === 'visible' ? ButtonStyle.Danger : ButtonStyle.Success;
-
-    const availToggleLabel = product.availability === 'active' ? '🟡 وضع الصيانة' : '🟢 تفعيل المنتج';
+    const availToggleLabel = product.availability === 'active' ? '🛠️ صيانة' : '🟢 تفعيل';
     const availToggleStyle = product.availability === 'active' ? ButtonStyle.Secondary : ButtonStyle.Success;
 
     return [
       new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId(`dash_p_avail_${product.id}`).setLabel(availToggleLabel).setStyle(availToggleStyle),
         new ButtonBuilder().setCustomId(`dash_p_vis_${product.id}`).setLabel(visToggleLabel).setStyle(visToggleStyle),
-        new ButtonBuilder().setCustomId(`dash_p_badge_${product.id}`).setLabel('🏷️ تغيير Badge').setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId(`dash_p_badge_${product.id}`).setLabel('🏷️ Badge').setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId(`dash_p_version_${product.id}`).setLabel('🔄 الإصدار').setStyle(ButtonStyle.Primary),
       ),
       new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId(`dash_p_name_${product.id}`).setLabel('✏️ الاسم').setStyle(ButtonStyle.Primary),
         new ButtonBuilder().setCustomId(`dash_p_desc_${product.id}`).setLabel('📝 الوصف').setStyle(ButtonStyle.Primary),
         new ButtonBuilder().setCustomId(`dash_p_price_${product.id}`).setLabel('💰 السعر').setStyle(ButtonStyle.Primary),
         new ButtonBuilder().setCustomId(`dash_p_color_${product.id}`).setLabel('🎨 اللون').setStyle(ButtonStyle.Primary),
-      ),
-      new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId(`dash_p_images_${product.id}`).setLabel('🖼️ الصور').setStyle(ButtonStyle.Primary),
         new ButtonBuilder().setCustomId(`dash_p_features_${product.id}`).setLabel('⭐ المميزات').setStyle(ButtonStyle.Primary),
-        new ButtonBuilder().setCustomId(`dash_p_plans_${product.id}`).setLabel('📦 الباقات').setStyle(ButtonStyle.Primary),
-        new ButtonBuilder().setCustomId(`dash_p_version_${product.id}`).setLabel('🔄 الإصدار').setStyle(ButtonStyle.Primary),
       ),
       new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId(`dash_p_order_up_${product.id}`).setLabel('⬆️ لأعلى').setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder().setCustomId(`dash_p_order_down_${product.id}`).setLabel('⬇️ لأسفل').setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder().setCustomId(`dash_p_refresh_${product.id}`).setLabel('🔄 تحديث الرسالة').setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder().setCustomId('dash_back_to_list').setLabel('↩️ رجوع للقائمة').setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId(`dash_p_images_${product.id}`).setLabel('🖼️ الصور').setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId(`dash_p_plans_${product.id}`).setLabel('📦 الباقات').setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId(`dash_p_order_up_${product.id}`).setLabel('⬆️ ترتيب').setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId(`dash_p_order_down_${product.id}`).setLabel('⬇️ ترتيب').setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId(`dash_p_refresh_${product.id}`).setLabel('🔄 تحديث').setStyle(ButtonStyle.Secondary),
+      ),
+      new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId('dash_back_to_list').setLabel('↩️ رجوع للمنتجات').setStyle(ButtonStyle.Secondary),
       ),
     ];
   },
