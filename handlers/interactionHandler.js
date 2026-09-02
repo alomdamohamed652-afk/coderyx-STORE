@@ -61,6 +61,8 @@ module.exports = {
         return interaction.reply({ content: '❌ لوحة المنتجات متاحة للإدارة فقط.', ephemeral: true });
       }
 
+      if (id === 'store_product_search_modal') return storeFlow.handleProductSearch(interaction);
+
       if (id === 'dash_modal_category_add') return dashboardHandler.handleCategoryAddModal(interaction);
       if (id.startsWith('dash_modal_category_')) return productEditHandler.handleCategoryModalSubmit(interaction);
 
@@ -134,6 +136,7 @@ module.exports = {
         case 'wizard_open_step3': return productWizardHandler.openStep3(interaction);
 
         // ─── Customer-facing: زر "تحت الصيانة" ───
+        case 'store_product_search': return interaction.showModal(require('../core/components').storeProductSearchModal());
         case 'payment_add': return paymentAdminHandler.openAdd(interaction);
         case 'product_maintenance_notice':
           return interaction.reply({ content: '🛠️ هذا المنتج تحت الصيانة حاليًا ولا يمكن شراؤه في الوقت الحالي.', ephemeral: true });
@@ -194,6 +197,7 @@ module.exports = {
 
       switch (id) {
         // اختيار نوع التيكت من البانل نفسه (خارج أي تيكت)
+        case 'store_category_select': return storeFlow.handleCategorySelect(interaction);
         case 'panel_ticket_type': return ticketHandler.createFromPanel(interaction);
         case 'select_product':    return storeFlow.handleProductSelect(interaction);
         case 'select_plan':       return storeFlow.handlePlanSelect(interaction);
