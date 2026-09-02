@@ -126,6 +126,22 @@ module.exports = {
     });
   },
 
+  async handleCategories(interaction) {
+    if (!this.checkAccess(interaction)) return;
+    return interaction.reply({
+      embeds: [dashEmbeds.categories()],
+      components: [
+        new (require('discord.js').ActionRowBuilder)().addComponents(
+          new (require('discord.js').ButtonBuilder)()
+            .setCustomId('dash_category_add')
+            .setLabel('➕ إضافة تصنيف')
+            .setStyle(require('discord.js').ButtonStyle.Success)
+        )
+      ],
+      ephemeral: true,
+    });
+  },
+
   async handlePaymentMethods(interaction) {
     const paymentAdminHandler = require('./paymentAdminHandler');
     return paymentAdminHandler.open(interaction);
