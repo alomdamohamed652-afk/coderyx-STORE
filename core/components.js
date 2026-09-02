@@ -38,6 +38,34 @@ module.exports = {
   },
 
   // ───────────────────────────────────
+  //   STORE CATEGORIES: تصفح التصنيفات الهرمية
+  // ───────────────────────────────────
+
+  categorySelect(categories, customId = 'store_category_select') {
+    const options = categories.slice(0, 25).map(path => ({
+      label: String(path.at(-1)).slice(0, 100),
+      value: String(path.at(-1)).slice(0, 100),
+      description: path.length > 1 ? path.slice(0, -1).join(' > ').slice(0, 100) : 'تصنيف رئيسي',
+    }));
+
+    return new ActionRowBuilder().addComponents(
+      new StringSelectMenuBuilder()
+        .setCustomId(customId)
+        .setPlaceholder('📁 اختر التصنيف...')
+        .addOptions(options)
+    );
+  },
+
+  categoryBackButton() {
+    return new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId('store_category_back')
+        .setLabel('↩️ رجوع للتصنيفات')
+        .setStyle(ButtonStyle.Secondary)
+    );
+  },
+
+  // ───────────────────────────────────
   //   PRODUCT SELECT: اختيار منتج
   // ───────────────────────────────────
 
