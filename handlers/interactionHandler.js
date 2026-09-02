@@ -175,6 +175,8 @@ module.exports = {
         return orderInteractionHandler.handleFeedbackStarClick(interaction, rating);
       }
 
+      if (id === 'store_category_back') return storeFlow.handleCategoryBack(interaction);
+
       if (id.startsWith('teamrate|')) {
         return transcriptHandler.handleTeamRating(interaction);
       }
