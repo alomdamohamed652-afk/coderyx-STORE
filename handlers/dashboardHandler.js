@@ -138,7 +138,7 @@ module.exports = {
     const all = categories.getAllCategories();
 
     return interaction.reply({
-      content: `📁 **إضافة تصنيف جديد: ${name}**\\nاختر المستوى الأب للتصنيف. يمكنك اختيار **عام** لإنشائه كتصنيف رئيسي.`,
+      content: `📁 **إضافة تصنيف جديد: ${name}**\nاختر المستوى الأب للتصنيف. يمكنك اختيار **عام** لإنشائه كتصنيف رئيسي.`,
       components: [require('../core/dashboardComponents').categoryParentSelect(all)],
       ephemeral: true,
     });
@@ -170,7 +170,7 @@ module.exports = {
       });
 
       return interaction.update({
-        content: `✅ تم إنشاء التصنيف **${created.name}**\\n🆔 ${created.id}\\n📁 ${created.pathKey}`,
+        content: `✅ تم إنشاء التصنيف **${created.name}**\n🆔 ${created.id}\n📁 ${created.pathKey}`,
         components: [require('../core/dashboardComponents').categoryManagementButtons()],
         embeds: [dashEmbeds.categories()],
       });
@@ -201,7 +201,7 @@ module.exports = {
     if (!category) return interaction.update({ content: '❌ التصنيف غير موجود.', components: [] });
 
     return interaction.update({
-      content: `📁 **${category.name}**\\n🆔 ${category.id}\\n📍 ${category.pathKey}\\n📦 المنتجات: ${categories.getProducts(category.id).length}`,
+      content: `📁 **${category.name}**\n🆔 ${category.id}\n📍 ${category.pathKey}\n📦 المنتجات: ${categories.getProducts(category.id).length}`,
       embeds: [dashEmbeds.categories()],
       components: [
         new (require('discord.js').ActionRowBuilder)().addComponents(
@@ -242,7 +242,7 @@ module.exports = {
       });
       await this.refreshMainDashboard(interaction.client);
       return interaction.editReply({
-        content: `✅ تم تعديل التصنيف إلى **${updated.name}**\\n🆔 ${updated.id}\\n📍 ${updated.pathKey}`,
+        content: `✅ تم تعديل التصنيف إلى **${updated.name}**\n🆔 ${updated.id}\n📍 ${updated.pathKey}`,
         embeds: [dashEmbeds.categories()],
         components: [require('../core/dashboardComponents').categoryManagementButtons(), require('../core/dashboardComponents').categoryManageSelect(categories.getAllCategories())],
       });
@@ -257,7 +257,7 @@ module.exports = {
     const category = categories.getById(id);
     if (!category) return interaction.reply({ content: '❌ التصنيف غير موجود.', ephemeral: true });
     return interaction.reply({
-      content: `⚠️ سيتم حذف **${category.pathKey}** وجميع التصنيفات الفرعية.\\nالمنتجات التابعة لها ستُنقل تلقائيًا إلى **عام**.`,
+      content: `⚠️ سيتم حذف **${category.pathKey}** وجميع التصنيفات الفرعية.\nالمنتجات التابعة لها ستُنقل تلقائيًا إلى **عام**.`,
       components: [require('../core/dashboardComponents').categoryDeleteConfirm(category)],
       ephemeral: true,
     });
@@ -277,7 +277,7 @@ module.exports = {
       });
       await this.refreshMainDashboard(interaction.client);
       return interaction.editReply({
-        content: `🗑️ تم حذف **${result.deletedPath.join(' > ')}**.\\n📦 تم نقل ${result.movedProducts.length} منتج إلى **عام**.`,
+        content: `🗑️ تم حذف **${result.deletedPath.join(' > ')}**.\n📦 تم نقل ${result.movedProducts.length} منتج إلى **عام**.`,
         embeds: [dashEmbeds.categories()],
         components: [require('../core/dashboardComponents').categoryManagementButtons(), require('../core/dashboardComponents').categoryManageSelect(categories.getAllCategories())],
       });
@@ -335,7 +335,7 @@ module.exports = {
     const product = registry.getById(productId);
     if (!product) return interaction.reply({ content: '❌ المنتج غير موجود.', ephemeral: true });
     return interaction.reply({
-      content: `🗂️ **تصنيف المنتج: ${product.name}**\\nاختر التصنيف من القائمة بدل كتابة الاسم يدويًا.`,
+      content: `🗂️ **تصنيف المنتج: ${product.name}**\nاختر التصنيف من القائمة بدل كتابة الاسم يدويًا.`,
       components: [dashComponents.productCategorySelect(productId, categories.getAllCategories())],
       ephemeral: true,
     });
