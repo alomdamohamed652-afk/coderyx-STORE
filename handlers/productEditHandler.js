@@ -4,6 +4,7 @@ const registry        = require('../core/registry');
 const dashComponents   = require('../core/dashboardComponents');
 const dashEmbeds       = require('../core/dashboardEmbeds');
 const dashboardLogHandler = require('./dashboardLogHandler');
+const categories = require('../core/categoryRegistry');
 
 // ─────────────────────────────────────────
 //   Product Edit Handler
@@ -77,6 +78,46 @@ module.exports = {
     const dashboardHandler = require('./dashboardHandler');
     await dashboardHandler.refreshMainDashboard(interaction.client);
     await refreshOriginalDashboardMessage(interaction, productId);
+  },
+
+  async openCategoryModal(interaction) {
+    const productId = extractProductId(interaction.customId, 'dash_p_category_');
+    const product = registry.getById(productId);
+    if (!product) return interaction.reply({ content: '❌ المنتج غير موجود.', ephemeral: true });
+    return interaction.showModal(dashComponents.productCategoryModal(productId, product.categoryPath || []));
+  },
+
+  async handleCategoryModalSubmit(interaction) {
+    const productId = extractProductId(interaction.customId, 'dash_modal_category_');
+    const productBefore = registry.getById(productId);
+    if (!productBefore) return interaction.reply({ content: '❌ المنتج غير موجود.', ephemeral: true });
+
+    const raw = interaction.fields.getTextInputValue('category_path').trim();
+    const path = categories.normalize(raw);
+    if (!path.length) return interaction.reply({ content: '❌ مسار التصنيف غير صحيح.', ephemeral: true });
+
+    await interaction.deferUpdate();
+    categories.ensurePath(path);
+    registry.save(productId, { categoryPath: path, category: path.join(' > ') });
+
+    await dashboardLogHandler.log(interaction.client, {
+      actor: interaction.user,
+      action: 'edit_category',
+      product: productBefore,
+      before: (productBefore.categoryPath || []).join(' > ') || 'عام',
+      after: path.join(' > '),
+    });
+
+    const dashboardHandler = require('./dashboardHandler');
+    await dashboardHandler.refreshMainDashboard(interaction.client);
+    const updated = registry.getById(productId);
+
+    return interaction.followUp({
+      content: `✅ تم تحديث تصنيف **${updated.name}** إلى: **${path.join(' > ')}**`,
+      embeds: [dashEmbeds.productDashboard(updated)],
+      components: dashComponents.productControlButtons(updated),
+      ephemeral: true,
+    });
   },
 
   // ─── فتح قائمة اختيار Badge ───
