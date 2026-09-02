@@ -209,7 +209,14 @@ module.exports = {
     if (actionsMessageId) {
       try {
         const actionsMessage = await channel.messages.fetch(actionsMessageId);
-        await actionsMessage.edit({ components: [components.ticketActions(true), components.ticketAdminButton()] });
+        const preservedRows = actionsMessage.components.map(row => {
+          const raw = row.toJSON ? row.toJSON() : row;
+          if (raw.components?.some(comp => comp.custom_id === 'claim_ticket' || comp.custom_id === 'request_close')) {
+            return components.ticketActions(true).toJSON();
+          }
+          return raw;
+        });
+        await actionsMessage.edit({ components: preservedRows });
       } catch (err) {
         console.warn('[ticketHandler] فشل تحديث رسالة الأزرار بعد الاستلام:', err.message);
       }
