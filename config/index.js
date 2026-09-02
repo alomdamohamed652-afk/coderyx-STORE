@@ -45,7 +45,8 @@ module.exports = {
     colorDanger: 0xED4245,
     colorSuccess: 0x57F287,
     colorWarn:  0xFEE75C,
-    logo:       'https://i.imgur.com/placeholder.png',
+    logo:       process.env.STORE_LOGO_URL || 'https://i.imgur.com/placeholder.png',
+    ticketBanner: process.env.TICKET_BANNER_URL || 'https://media.discordapp.net/attachments/1486029380802314380/1544325415965958207/CODRYX_animated.gif?ex=6a98c15f&is=6a976fdf&hm=36a9b668c3990d624a45f66ae6f36e13b42b544b53a6f9b096534aee31f18a16&=',
     footer:     'Codryx • أنظمة احترافية',
   },
 
