@@ -27,7 +27,7 @@ module.exports = {
       });
     }
 
-    await interaction.channel.send({
+    return interaction.channel.send({
       embeds:     [embeds.store(products)],
       components: [components.productSelect(products), ...extraComponents],
     });
