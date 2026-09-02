@@ -6,6 +6,7 @@ const embeds = require('../core/embeds');
 const components = require('../core/components');
 const db = require('../core/database');
 const permissions = require('../core/permissions');
+const audit = require('../core/audit');
 
 const TYPE_LABELS = {
   purchase: 'شراء منتج',
@@ -59,10 +60,14 @@ function scheduleUnclaimedReminder(client, channelId, delay = reminderDelayMs())
       if (!channel) return;
       const roleIds = ['purchase', 'custom_dev'].includes(ticket.type) ? cfg.roles.dev : cfg.roles.support;
       const mention = permissions.mentionRoles(channel.guild, roleIds);
+      const leaderMention = permissions.mentionRoles(channel.guild, cfg.roles.teamLeader);
       await channel.send({
-        content: mention || undefined,
+        content: [mention, leaderMention].filter(Boolean).join(' ') || undefined,
         embeds: [embeds.unclaimedReminder(ticket)],
+        allowedMentions: { roles: [...roleIds, ...cfg.roles.teamLeader] },
       });
+      db.recordTicketEvent(channelId, 'unclaimed_reminder', { details: { minutes: cfg.tickets.unclaimedReminderMinutes } });
+      await audit.log(client, { action: 'Ticket unclaimed reminder / escalation', ticket, details: { 'الانتظار': cfg.tickets.unclaimedReminderMinutes + ' دقيقة' } });
       db.updateTicket(channelId, { reminderSentAt: new Date().toISOString() });
     } catch (err) {
       console.warn('[ticketHandler] فشل إرسال تذكير التذكرة:', err.message);
@@ -163,6 +168,8 @@ module.exports = {
     }
 
     if (flowMessage?.id) db.updateTicket(channel.id, { actionsMessageId: flowMessage.id });
+    db.recordTicketEvent(channel.id, 'created', { byUserId: user.id, byUsername: user.username, details: { type } });
+    await audit.log(interaction.client, { action: 'Ticket Created', actorId: user.id, ticket: db.getTicket(channel.id), details: { 'النوع': TYPE_LABELS[type] || type } });
     return flowMessage;
   },
 
@@ -190,10 +197,12 @@ module.exports = {
       claimedAt: new Date().toISOString(),
       state: 'claimed',
     });
+    db.recordTicketEvent(channel.id, 'claimed', { byUserId: interaction.user.id, byUsername: interaction.user.username });
 
     const updatedTicket = db.getTicket(channel.id);
     await channel.setName(baseTicketName(updatedTicket, interaction.user)).catch(() => {});
     await channel.send({ embeds: [embeds.ticketClaimed(interaction.user)] });
+    await audit.log(interaction.client, { action: 'Ticket Claimed', actorId: interaction.user.id, ticket: updatedTicket });
 
     const actionsMessageId = ticket.actionsMessageId ?? interaction.message?.id;
     if (actionsMessageId) {
@@ -258,10 +267,13 @@ module.exports = {
     const category = interaction.guild.channels.cache.get(categoryId);
     if (!category) return interaction.reply({ content: '❌ كاتيجوري القسم الجديد غير موجودة.', ephemeral: true });
     await interaction.channel.setParent(category.id, { lockPermissions: false });
-    db.updateTicket(interaction.channel.id, { type: newType });
+    const oldType = ticket.type;
+    db.updateTicket(interaction.channel.id, { type: newType, state: ticket.state === 'closed' ? 'closed' : (ticket.claimedBy ? 'claimed' : 'open') });
+    db.recordTicketEvent(interaction.channel.id, 'transferred', { byUserId: interaction.user.id, byUsername: interaction.user.username, details: { from: oldType, to: newType } });
     const updated = db.getTicket(interaction.channel.id);
     const claimer = updated.claimedBy ? { username: updated.claimedUsername } : null;
     await interaction.channel.setName(baseTicketName(updated, claimer)).catch(() => {});
+    await audit.log(interaction.client, { action: 'Ticket Transferred', actorId: interaction.user.id, ticket: updated, details: { 'من': TYPE_LABELS[oldType] || oldType, 'إلى': TYPE_LABELS[newType] || newType } });
     return interaction.update({ content: `✅ تم نقل التذكرة إلى **${TYPE_LABELS[newType] || newType}**.`, components: [] });
   },
   async requestClose(interaction) {
@@ -276,6 +288,7 @@ module.exports = {
       requestedCloseBy: `${interaction.user.tag} (${interaction.user.id})`,
       requestedCloseAt: new Date().toISOString(),
     });
+    db.recordTicketEvent(channel.id, 'close_requested', { byUserId: interaction.user.id, byUsername: interaction.user.username });
 
     if (permissions.isCloser(interaction.member, cfg)) {
       await channel.send({ content: 'يمكنك تأكيد الحذف الآن:', components: [components.closeConfirm()] });
@@ -307,7 +320,9 @@ module.exports = {
       embeds: [embeds.info('إغلاق التذكرة', 'سيتم حذف هذه التذكرة خلال 5 ثوانٍ...')],
     }).catch(() => {});
 
-    db.updateTicket(channel.id, { state: 'closed' });
+    db.updateTicket(channel.id, { state: 'closed', closedAt: new Date().toISOString(), closedBy: interaction.user.id, closedByUsername: interaction.user.username });
+    db.recordTicketEvent(channel.id, 'closed', { byUserId: interaction.user.id, byUsername: interaction.user.username });
+    await audit.log(interaction.client, { action: 'Ticket Closed', actorId: interaction.user.id, ticket: db.getTicket(channel.id) });
 
     const transcriptHandler = require('./transcriptHandler');
     const TYPE_LABELS_FULL = {
