@@ -145,6 +145,84 @@ module.exports = {
   },
 
   // ───────────────────────────────────
+  //   TICKET MANAGEMENT
+  //   يظهر زر الإدارة، والقائمة نفسها تُفتح بشكل Ephemeral
+  //   للمستخدمين المصرح لهم فقط.
+  // ───────────────────────────────────
+
+  ticketAdminButton() {
+    return new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId('ticket_admin_open')
+        .setLabel('🛡️ إدارة التذكرة')
+        .setStyle(ButtonStyle.Secondary),
+    );
+  },
+
+  ticketAdminMenu() {
+    return new ActionRowBuilder().addComponents(
+      new StringSelectMenuBuilder()
+        .setCustomId('ticket_admin_menu')
+        .setPlaceholder('⚙️ اختر إجراء الإدارة...')
+        .addOptions([
+          { label: 'إضافة عضو', value: 'add_member', emoji: '👤', description: 'منح عضو صلاحية الدخول للتذكرة' },
+          { label: 'حذف عضو', value: 'remove_member', emoji: '👤', description: 'إزالة عضو من التذكرة' },
+          { label: 'تغيير اسم التذكرة', value: 'rename', emoji: '✏️', description: 'تعديل اسم قناة التذكرة' },
+          { label: 'نقل التذكرة', value: 'transfer', emoji: '🔄', description: 'نقل التذكرة إلى قسم آخر' },
+          { label: 'إرسال تنبيه', value: 'notify', emoji: '🔔', description: 'تنبيه صاحب التذكرة داخل القناة' },
+        ]),
+    );
+  },
+
+  ticketTransferMenu() {
+    return new ActionRowBuilder().addComponents(
+      new StringSelectMenuBuilder()
+        .setCustomId('ticket_transfer_menu')
+        .setPlaceholder('📁 اختر القسم الجديد...')
+        .addOptions([
+          { label: 'شراء منتج', value: 'purchase', emoji: '🛒' },
+          { label: 'دعم فني', value: 'support', emoji: '🔧' },
+          { label: 'استفسار', value: 'inquiry', emoji: '💬' },
+          { label: 'تطوير خاص', value: 'custom_dev', emoji: '⚙️' },
+          { label: 'بلاغ', value: 'report', emoji: '🚨' },
+        ]),
+    );
+  },
+
+  ticketMemberModal(action) {
+    const modal = new ModalBuilder()
+      .setCustomId(`ticket_member_${action}`)
+      .setTitle(action === 'add' ? 'إضافة عضو للتذكرة' : 'حذف عضو من التذكرة');
+
+    const input = new TextInputBuilder()
+      .setCustomId('member_id')
+      .setLabel('Discord User ID')
+      .setStyle(TextInputStyle.Short)
+      .setRequired(true)
+      .setPlaceholder('مثال: 123456789012345678');
+
+    modal.addComponents(new ActionRowBuilder().addComponents(input));
+    return modal;
+  },
+
+  ticketRenameModal() {
+    const modal = new ModalBuilder()
+      .setCustomId('ticket_rename_modal')
+      .setTitle('تغيير اسم التذكرة');
+
+    const input = new TextInputBuilder()
+      .setCustomId('ticket_name')
+      .setLabel('اسم التذكرة الجديد')
+      .setStyle(TextInputStyle.Short)
+      .setRequired(true)
+      .setMaxLength(100)
+      .setPlaceholder('مثال: 🎫・P-123•mushi-er');
+
+    modal.addComponents(new ActionRowBuilder().addComponents(input));
+    return modal;
+  },
+
+  // ───────────────────────────────────
   //   CUSTOMER HISTORY / ORDER CONTROLS
   // ───────────────────────────────────
 
