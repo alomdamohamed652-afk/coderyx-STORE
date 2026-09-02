@@ -103,31 +103,98 @@ module.exports = {
       .setTitle('إضافة تصنيف');
 
     const input = new TextInputBuilder()
-      .setCustomId('category_path')
-      .setLabel('مسار التصنيف')
+      .setCustomId('category_name')
+      .setLabel('اسم التصنيف الجديد')
       .setStyle(TextInputStyle.Short)
       .setRequired(true)
-      .setPlaceholder('مثال: FiveM > Systems > Management');
+      .setMaxLength(80)
+      .setPlaceholder('مثال: FiveM أو Systems');
 
     modal.addComponents(new ActionRowBuilder().addComponents(input));
     return modal;
   },
 
-  productCategoryModal(productId, currentPath = []) {
+  categoryManagementButtons() {
+    return new ActionRowBuilder().addComponents(
+      new ButtonBuilder().setCustomId('dash_category_add').setLabel('➕ إضافة').setStyle(ButtonStyle.Success),
+      new ButtonBuilder().setCustomId('dash_category_mode').setLabel('🖥️ طريقة العرض').setStyle(ButtonStyle.Primary),
+    );
+  },
+
+  categoryManageSelect(categories = []) {
+    const options = categories.slice(0, 25).map(c => ({
+      label: String(c.name).slice(0, 100),
+      value: c.id,
+      description: `${c.id} • ${c.path.join(' > ')}`.slice(0, 100),
+    }));
+    if (!options.length) options.push({ label: 'لا توجد تصنيفات', value: 'none' });
+
+    return new ActionRowBuilder().addComponents(
+      new StringSelectMenuBuilder()
+        .setCustomId('dash_category_manage_select')
+        .setPlaceholder('📁 اختر تصنيفًا لإدارته...')
+        .addOptions(options)
+    );
+  },
+
+  categoryParentSelect(categories = []) {
+    const options = [
+      { label: 'عام / بدون أب', value: 'root', emoji: '🏠', description: 'إنشاء التصنيف كمستوى رئيسي' },
+      ...categories.slice(0, 24).map(c => ({
+        label: String(c.name).slice(0, 100),
+        value: c.id,
+        description: c.path.join(' > ').slice(0, 100),
+      })),
+    ];
+    return new ActionRowBuilder().addComponents(
+      new StringSelectMenuBuilder()
+        .setCustomId('dash_category_parent_select')
+        .setPlaceholder('📁 اختر التصنيف الأب...')
+        .addOptions(options)
+    );
+  },
+
+  categoryEditModal(category) {
     const modal = new ModalBuilder()
-      .setCustomId(`dash_modal_category_${productId}`)
-      .setTitle('تغيير تصنيف المنتج');
+      .setCustomId(`dash_modal_category_edit_${category.id}`)
+      .setTitle('تعديل اسم التصنيف');
 
     const input = new TextInputBuilder()
-      .setCustomId('category_path')
-      .setLabel('مسار التصنيف')
+      .setCustomId('category_name')
+      .setLabel('الاسم الجديد')
       .setStyle(TextInputStyle.Short)
       .setRequired(true)
-      .setValue(currentPath.join(' > ').slice(0, 400))
-      .setPlaceholder('مثال: FiveM > Systems > Management');
+      .setMaxLength(80)
+      .setValue(String(category.name).slice(0, 80));
 
     modal.addComponents(new ActionRowBuilder().addComponents(input));
     return modal;
+  },
+
+  categoryDeleteConfirm(category) {
+    return new ActionRowBuilder().addComponents(
+      new ButtonBuilder().setCustomId(`dash_category_delete_confirm_${category.id}`).setLabel('🗑️ تأكيد الحذف').setStyle(ButtonStyle.Danger),
+      new ButtonBuilder().setCustomId('dash_category_delete_cancel').setLabel('↩️ إلغاء').setStyle(ButtonStyle.Secondary),
+    );
+  },
+
+  productCategorySelect(productId, categories = []) {
+    const options = [
+      { label: 'عام / بدون تصنيف', value: 'none', emoji: '🏠', description: 'إظهار المنتج خارج التصنيفات' },
+      ...categories.slice(0, 24).map(c => ({
+        label: String(c.name).slice(0, 100),
+        value: c.id,
+        description: `${c.id} • ${c.path.join(' > ')}`.slice(0, 100),
+        default: false,
+      })),
+    ];
+
+    return new ActionRowBuilder().addComponents(
+      new StringSelectMenuBuilder()
+        .setCustomId(`dash_product_category_select_${productId}`)
+        .setPlaceholder('🗂️ اختر تصنيف المنتج...')
+        .addOptions(options)
+    );
   },
 
   // ───────────────────────────────────
