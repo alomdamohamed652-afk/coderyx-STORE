@@ -18,20 +18,32 @@ module.exports = {
 
   // ─── Step 1: عرض المنتجات ───────────
 
+  buildPurchaseComponents(ticket, selectorRows = []) {
+    const rows = [...selectorRows];
+
+    // أزرار التذكرة مستقلة عن اختيار المنتج:
+    // Claim لا يحذف Select، واختيار المنتج لا يحذف Claim/Close/Admin.
+    rows.push(components.ticketActions(!!ticket?.claimedBy));
+    rows.push(components.ticketAdminButton());
+
+    return rows.slice(0, 5);
+  },
+
   async start(interaction) {
     const roots = categories.getRootCategories();
+    const ticket = db.getTicket(interaction.channel.id);
 
     if (roots.length > 0) {
       return interaction.channel.send({
         embeds: [embeds.storeCategories(roots, [])],
-        components: [components.categorySelect(roots)],
+        components: this.buildPurchaseComponents(updatedTicket, [components.categorySelect(roots)]),
       });
     }
 
     const products = registry.getVisible();
     return interaction.channel.send({
       embeds: [embeds.store(products)],
-      components: [components.productSelect(products)],
+      components: this.buildPurchaseComponents(ticket, [components.productSelect(products)]),
     });
   },
 
@@ -49,11 +61,15 @@ module.exports = {
 
     db.updateTicket(interaction.channel.id, { selectedCategoryPath: child });
 
+    const updatedTicket = db.getTicket(interaction.channel.id);
     const children = categories.getChildren(child);
     if (children.length > 0) {
       return interaction.editReply({
         embeds: [embeds.storeCategories(children, child)],
-        components: [components.categorySelect(children), components.categoryBackButton()],
+        components: this.buildPurchaseComponents(ticket, [
+          components.categorySelect(children),
+          components.categoryBackButton(),
+        ]),
       });
     }
 
@@ -61,13 +77,16 @@ module.exports = {
     if (products.length === 0) {
       return interaction.editReply({
         embeds: [embeds.info('لا توجد منتجات', 'لا توجد منتجات متاحة داخل هذا التصنيف حاليًا.')],
-        components: [components.categoryBackButton()],
+        components: this.buildPurchaseComponents(ticket, [components.categoryBackButton()]),
       });
     }
 
     return interaction.editReply({
       embeds: [embeds.store(products, child)],
-      components: [components.productSelect(products), components.categoryBackButton()],
+      components: this.buildPurchaseComponents(ticket, [
+        components.productSelect(products),
+        components.categoryBackButton(),
+      ]),
     });
   },
 
@@ -80,10 +99,14 @@ module.exports = {
 
     db.updateTicket(interaction.channel.id, { selectedCategoryPath: parent });
 
+    const updatedTicket = db.getTicket(interaction.channel.id);
     const children = categories.getChildren(parent);
     return interaction.editReply({
       embeds: [embeds.storeCategories(children, parent)],
-      components: [components.categorySelect(children), ...(parent.length ? [components.categoryBackButton()] : [])],
+      components: this.buildPurchaseComponents(updatedTicket, [
+        components.categorySelect(children),
+        ...(parent.length ? [components.categoryBackButton()] : []),
+      ]),
     });
   },
 
@@ -110,11 +133,21 @@ module.exports = {
 
     db.updateTicket(interaction.channel.id, { selectedProduct: productId });
 
-    // تعطيل قائمة المنتجات بعد الاختيار
-    const products = registry.getVisible();
-    const disabledMenu = components.productSelect(products);
+    // عطّل اختيار المنتج فقط؛ أبقِ الفئة + Claim/Close/Admin.
+    const updatedTicket = db.getTicket(interaction.channel.id);
+    const selectedPath = Array.isArray(updatedTicket?.selectedCategoryPath)
+      ? updatedTicket.selectedCategoryPath
+      : [];
+    const disabledMenu = components.productSelect([product]);
     disabledMenu.components[0].setDisabled(true);
-    await interaction.message.edit({ components: [disabledMenu, components.categoryBackButton()] }).catch(() => {});
+
+    const selectorRows = [
+      disabledMenu,
+      ...(selectedPath.length ? [components.categoryBackButton()] : []),
+    ];
+    await interaction.message.edit({
+      components: this.buildPurchaseComponents(updatedTicket, selectorRows),
+    }).catch(() => {});
 
     // المنتج تحت الصيانة → نعرض التفاصيل لكن بدون إمكانية شراء فعلية
     if (product.availability === 'maintenance') {
