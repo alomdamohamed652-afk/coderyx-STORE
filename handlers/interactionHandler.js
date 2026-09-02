@@ -64,6 +64,7 @@ module.exports = {
       if (id === 'store_product_search_modal') return storeFlow.handleProductSearch(interaction);
 
       if (id === 'dash_modal_category_add') return dashboardHandler.handleCategoryAddModal(interaction);
+      if (id.startsWith('dash_modal_category_edit_')) return dashboardHandler.handleCategoryEditModal(interaction);
       if (id.startsWith('dash_modal_category_')) return productEditHandler.handleCategoryModalSubmit(interaction);
 
       if (id === 'payment_modal_add') return paymentAdminHandler.submitAdd(interaction);
@@ -127,6 +128,8 @@ module.exports = {
         case 'dash_payment_methods': return dashboardHandler.handlePaymentMethods(interaction);
         case 'dash_categories':     return dashboardHandler.handleCategories(interaction);
         case 'dash_category_add':   return interaction.showModal(require('../core/dashboardComponents').categoryAdminModal());
+        case 'dash_category_mode':  return dashboardHandler.toggleCategoryDisplayMode(interaction);
+        case 'dash_category_delete_cancel': return dashboardHandler.cancelCategoryDelete(interaction);
         case 'dash_settings':       return dashboardHandler.handleSettings(interaction);
         case 'dash_back_to_list':  return dashboardHandler.handleBackToList(interaction);
 
@@ -141,6 +144,10 @@ module.exports = {
         case 'product_maintenance_notice':
           return interaction.reply({ content: '🛠️ هذا المنتج تحت الصيانة حاليًا ولا يمكن شراؤه في الوقت الحالي.', ephemeral: true });
       }
+
+      if (id.startsWith('dash_category_edit_')) return dashboardHandler.openCategoryEdit(interaction);
+      if (id.startsWith('dash_category_delete_confirm_')) return dashboardHandler.confirmCategoryDelete(interaction);
+      if (id.startsWith('dash_category_delete_')) return dashboardHandler.openCategoryDelete(interaction);
 
       // ─── Dashboard: أزرار لوحة منتج واحد (ديناميكية بـ productId) ───
       if (id.startsWith('dash_p_avail_'))    return productEditHandler.toggleAvailability(interaction);
@@ -204,6 +211,9 @@ module.exports = {
 
         // ─── Dashboard: اختيار منتج للتعديل ───
         case 'dash_select_product': return dashboardHandler.handleProductSelected(interaction);
+        case 'dash_category_manage_select': return dashboardHandler.handleCategoryManageSelect(interaction);
+        case 'dash_category_parent_select': return dashboardHandler.handleCategoryParentSelect(interaction);
+        case 'wizard_category_select': return productWizardHandler.handleCategorySelected(interaction);
         case 'payment_select': return paymentAdminHandler.select(interaction);
         case 'ticket_admin_menu': return ticketHandler.handleAdminMenu(interaction);
         case 'ticket_transfer_menu': return ticketHandler.transfer(interaction);
@@ -212,6 +222,8 @@ module.exports = {
 
       // قائمة تغيير حالة الأوردر (روم اللوج)
       if (id.startsWith('order_status_')) return orderInteractionHandler.handleStatusSelect(interaction);
+
+      if (id.startsWith('dash_product_category_select_')) return dashboardHandler.handleProductCategorySelect(interaction);
 
       // ─── Dashboard: اختيار Badge ───
       if (id.startsWith('dash_badge_select_')) return productEditHandler.handleBadgeSelected(interaction);
