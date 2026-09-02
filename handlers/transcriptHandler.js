@@ -392,7 +392,7 @@ module.exports = {
       <div class="person"><div class="label">صاحب التذكرة</div><div class="value">${escapeHtml(openedName)}</div></div>
       <div class="person"><div class="label">المستلم</div><div class="value">${escapeHtml(claimedName)}</div></div>
       <div class="person"><div class="label">فريق التذكرة</div><div class="value">${escapeHtml(teamName)}</div></div>
-      <div class="person"><div class="label">رتبة الفريق</div><div class="value">${escapeHtml(getTeamRoleNames(channel.guild, typeKey).join(' • ') || '—')}</div></div>
+      <div class="person"><div class="label">رتبة المستلم</div><div class="value">${escapeHtml(claimedRoleNames.join(' • ') || '—')}</div></div>
       <div class="person"><div class="label">وقت الإنشاء</div><div class="value">${escapeHtml(meta.openedAt ?? '—')}</div></div>
       <div class="person"><div class="label">أُغلقت بواسطة</div><div class="value">${escapeHtml(closedName)}</div></div>
       <div class="person"><div class="label">وقت الإغلاق</div><div class="value">${escapeHtml(meta.closedAt ?? '—')}</div></div>
