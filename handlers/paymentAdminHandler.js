@@ -7,7 +7,7 @@ const cfg = require('../config');
 const audit = require('../core/audit');
 
 function allowed(interaction) {
-  return permissions.isFinance(interaction.member, cfg);
+  return permissions.isFinance(interaction.member, cfg) || permissions.isAdmin(interaction.member, cfg);
 }
 
 function methodId(customId, prefix) {
