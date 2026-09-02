@@ -325,7 +325,13 @@ module.exports = {
     if (!category) return interaction.reply({ content: '❌ كاتيجوري القسم الجديد غير موجودة.', ephemeral: true });
     await interaction.channel.setParent(category.id, { lockPermissions: false });
     const oldType = ticket.type;
-    db.updateTicket(interaction.channel.id, { type: newType, state: ticket.state === 'closed' ? 'closed' : (ticket.claimedBy ? 'claimed' : 'open') });
+    const currentClaimer = ticket.claimedBy ? interaction.guild.members.cache.get(ticket.claimedBy) : null;
+    const claimerStillEligible = currentClaimer ? permissions.canClaimType(currentClaimer, cfg, newType) : false;
+    db.updateTicket(interaction.channel.id, {
+      type: newType,
+      state: ticket.state === 'closed' ? 'closed' : (claimerStillEligible ? 'claimed' : 'open'),
+      ...(claimerStillEligible ? {} : { claimedBy: null, claimedUsername: null, claimedAt: null }),
+    });
     db.recordTicketEvent(interaction.channel.id, 'transferred', { byUserId: interaction.user.id, byUsername: interaction.user.username, details: { from: oldType, to: newType } });
     const updated = db.getTicket(interaction.channel.id);
     const claimer = updated.claimedBy ? { username: updated.claimedUsername } : null;
