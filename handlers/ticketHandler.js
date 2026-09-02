@@ -269,24 +269,28 @@ module.exports = {
     const state = interaction.values[0];
     if (!['open','claimed','waiting','resolved'].includes(state)) return interaction.reply({ content: '❌ حالة غير صالحة.', ephemeral: true });
 
+    await interaction.deferUpdate();
     db.updateTicket(interaction.channel.id, { state });
     db.recordTicketEvent(interaction.channel.id, 'status_changed', { byUserId: interaction.user.id, byUsername: interaction.user.username, details: { from: ticket.state, to: state } });
     const updated = db.getTicket(interaction.channel.id);
     await audit.log(interaction.client, { action: 'Ticket Status Changed', actorId: interaction.user.id, ticket: updated, details: { 'من': ticket.state, 'إلى': state } });
-    return interaction.update({ content: `✅ تم تغيير حالة التذكرة إلى **${state}**.`, components: [] });
+    return interaction.editReply({ content: `✅ تم تغيير حالة التذكرة إلى **${state}**.`, components: [] });
   },
+
 
   async handleStaffTransferModal(interaction) {
     if (!permissions.isTicketManager(interaction.member, cfg)) return interaction.reply({ content: '❌ لا تملك صلاحية إدارة التذاكر.', ephemeral: true });
     const ticket = db.getTicket(interaction.channel.id);
     if (!ticket) return interaction.reply({ content: '❌ هذه ليست تذكرة.', ephemeral: true });
 
+    await interaction.deferReply({ ephemeral: true });
+
     const rawId = interaction.fields.getTextInputValue('staff_id').trim().replace(/[<@!>]/g, '');
-    if (!/^\d{17,20}$/.test(rawId)) return interaction.reply({ content: '❌ أرسل Discord User ID صحيح.', ephemeral: true });
+    if (!/^\d{17,20}$/.test(rawId)) return interaction.editReply({ content: '❌ أرسل Discord User ID صحيح.' });
 
     const member = await interaction.guild.members.fetch(rawId).catch(() => null);
-    if (!member) return interaction.reply({ content: '❌ العضو غير موجود في السيرفر.', ephemeral: true });
-    if (!permissions.canClaimType(member, cfg, ticket.type)) return interaction.reply({ content: '❌ هذا العضو ليس ضمن الفريق المختص بهذه التذكرة.', ephemeral: true });
+    if (!member) return interaction.editReply({ content: '❌ العضو غير موجود في السيرفر.' });
+    if (!permissions.canClaimType(member, cfg, ticket.type)) return interaction.editReply({ content: '❌ هذا العضو ليس ضمن الفريق المختص بهذه التذكرة.' });
 
     const oldStaff = ticket.claimedBy;
     const oldName = ticket.claimedUsername || 'غير مستلم';
@@ -311,31 +315,36 @@ module.exports = {
       ticket: updated,
       details: { 'من': oldStaff ? `<@${oldStaff}>` : oldName, 'إلى': `<@${member.id}>` },
     });
-    return interaction.reply({ content: `✅ تم نقل التذكرة إلى ${member}.`, ephemeral: true });
+    return interaction.editReply({ content: `✅ تم نقل التذكرة إلى ${member}.` });
   },
+
 
   async handleMemberModal(interaction, action) {
     if (!permissions.isTicketManager(interaction.member, cfg)) return interaction.reply({ content: '❌ لا تملك صلاحية إدارة التذاكر.', ephemeral: true });
+    await interaction.deferReply({ ephemeral: true });
     const rawId = interaction.fields.getTextInputValue('member_id').trim().replace(/[<@!>]/g, '');
-    if (!/^\d{17,20}$/.test(rawId)) return interaction.reply({ content: '❌ أرسل Discord User ID صحيح.', ephemeral: true });
+    if (!/^\d{17,20}$/.test(rawId)) return interaction.editReply({ content: '❌ أرسل Discord User ID صحيح.' });
     const member = await interaction.guild.members.fetch(rawId).catch(() => null);
-    if (!member) return interaction.reply({ content: '❌ العضو غير موجود في السيرفر.', ephemeral: true });
+    if (!member) return interaction.editReply({ content: '❌ العضو غير موجود في السيرفر.' });
     if (action === 'add') {
       await interaction.channel.permissionOverwrites.edit(member.id, { ViewChannel: true, SendMessages: true, AttachFiles: true });
-      return interaction.reply({ content: `✅ تمت إضافة ${member} إلى التذكرة.`, ephemeral: true });
+      return interaction.editReply({ content: `✅ تمت إضافة ${member} إلى التذكرة.` });
     }
     await interaction.channel.permissionOverwrites.delete(member.id).catch(() => {});
-    return interaction.reply({ content: `✅ تمت إزالة ${member} من التذكرة.`, ephemeral: true });
+    return interaction.editReply({ content: `✅ تمت إزالة ${member} من التذكرة.` });
   },
+
 
   async handleRenameModal(interaction) {
     if (!permissions.isTicketManager(interaction.member, cfg)) return interaction.reply({ content: '❌ لا تملك صلاحية إدارة التذاكر.', ephemeral: true });
     const name = interaction.fields.getTextInputValue('ticket_name').trim();
     if (!name) return interaction.reply({ content: '❌ اسم التذكرة لا يمكن أن يكون فارغًا.', ephemeral: true });
     const clean = name.replace(/[\\/]/g, '-').slice(0, 100);
+    await interaction.deferReply({ ephemeral: true });
     await interaction.channel.setName(clean);
-    return interaction.reply({ content: `✅ تم تغيير اسم التذكرة إلى: ${clean}`, ephemeral: true });
+    return interaction.editReply({ content: `✅ تم تغيير اسم التذكرة إلى: ${clean}` });
   },
+
 
   async transfer(interaction) {
     if (!permissions.isTicketManager(interaction.member, cfg)) return interaction.reply({ content: '❌ لا تملك صلاحية إدارة التذاكر.', ephemeral: true });
@@ -345,6 +354,8 @@ module.exports = {
     const categoryId = cfg.channels.categoryByType[newType] || cfg.channels.ticketsCat;
     const category = interaction.guild.channels.cache.get(categoryId);
     if (!category) return interaction.reply({ content: '❌ كاتيجوري القسم الجديد غير موجودة.', ephemeral: true });
+
+    await interaction.deferUpdate();
     await interaction.channel.setParent(category.id, { lockPermissions: false });
     const oldType = ticket.type;
     const currentClaimer = ticket.claimedBy ? interaction.guild.members.cache.get(ticket.claimedBy) : null;
@@ -359,8 +370,9 @@ module.exports = {
     const claimer = updated.claimedBy ? { username: updated.claimedUsername } : null;
     await interaction.channel.setName(baseTicketName(updated, claimer)).catch(() => {});
     await audit.log(interaction.client, { action: 'Ticket Transferred', actorId: interaction.user.id, ticket: updated, details: { 'من': TYPE_LABELS[oldType] || oldType, 'إلى': TYPE_LABELS[newType] || newType } });
-    return interaction.update({ content: `✅ تم نقل التذكرة إلى **${TYPE_LABELS[newType] || newType}**.`, components: [] });
+    return interaction.editReply({ content: `✅ تم نقل التذكرة إلى **${TYPE_LABELS[newType] || newType}**.`, components: [] });
   },
+
   async requestClose(interaction) {
     const channel = interaction.channel;
     const ticket = db.getTicket(channel.id);
