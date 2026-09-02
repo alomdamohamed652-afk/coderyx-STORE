@@ -156,7 +156,7 @@ module.exports = {
     let flowMessage = null;
     if (type === 'purchase') {
       const storeFlow = require('../flows/storeFlow');
-      flowMessage = await storeFlow.start({ channel, user, guild }, [components.ticketActions(false), components.ticketAdminButton()]);
+      flowMessage = await storeFlow.start({ channel, user, guild });
     } else {
       const supportFlow = require('../flows/supportFlow');
       flowMessage = await supportFlow.start({ channel, user, guild }, type, [components.ticketActions(false), components.ticketAdminButton()]);
