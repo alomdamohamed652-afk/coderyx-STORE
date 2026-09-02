@@ -14,7 +14,7 @@ module.exports = {
   async start(interaction, type, extraComponents = []) {
     const user = interaction.user;
 
-    await interaction.channel.send({
+    const message = await interaction.channel.send({
       embeds: [embeds.ticketOpenedByType(user, type)],
       components: extraComponents,
     });
@@ -29,5 +29,7 @@ module.exports = {
     } else {
       console.warn(`[supportFlow] ⚠️ لا توجد رتب صالحة للمنشن لنوع: ${type}`);
     }
+
+    return message;
   },
 };
