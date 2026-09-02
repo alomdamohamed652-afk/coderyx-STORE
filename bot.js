@@ -244,6 +244,8 @@ client.on('messageCreate', async (message) => {
 
   const isOwner   = permissions.isOwner(message.member, cfg);
   const isDevTeam = permissions.isDev(message.member, cfg);
+  const isAdmin = permissions.isAdmin(message.member, cfg);
+  const isFinance = permissions.isFinance(message.member, cfg);
   const content   = message.content.trim();
 
   // ── !panel ──────────────────────────
@@ -265,7 +267,7 @@ client.on('messageCreate', async (message) => {
 
   // ── !orders ──────────────────────────
   if (content === '!orders') {
-    if (!isOwner && !isDevTeam) return;
+    if (!isOwner && !isAdmin && !isFinance) return;
     message.delete().catch(() => {});
 
     const raw    = db._read();
