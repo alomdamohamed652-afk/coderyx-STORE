@@ -36,6 +36,28 @@ function renderContent(content = '') {
   return text.replace(/\n/g, '<br>');
 }
 
+function renderMessageContent(msg, guild) {
+  let content = String(msg.content || '');
+
+  content = content.replace(/<@!?(\\d+)>/g, (_, id) => {
+    const user = msg.mentions?.users?.get(id);
+    const member = guild?.members?.cache?.get(id);
+    return `@${user?.globalName || member?.displayName || user?.username || 'مستخدم'}`;
+  });
+
+  content = content.replace(/<@&(\\d+)>/g, (_, id) => {
+    const role = msg.mentions?.roles?.get(id) || guild?.roles?.cache?.get(id);
+    return `@${role?.name || 'رتبة'}`;
+  });
+
+  content = content.replace(/<#(\\d+)>/g, (_, id) => {
+    const channel = guild?.channels?.cache?.get(id);
+    return `#${channel?.name || 'قناة'}`;
+  });
+
+  return renderContent(content);
+}
+
 function renderEmbed(embed) {
   const color = embed.color ? `#${embed.color.toString(16).padStart(6, '0')}` : '#e11d48';
   let html = `<div class="embed" style="border-right-color:${color}">`;
@@ -237,7 +259,7 @@ module.exports = {
       const isBot = msg.author.bot;
 
       let bodyHtml = '';
-      if (msg.content) bodyHtml += `<div class="msg-content">${renderContent(msg.content)}</div>`;
+      if (msg.content) bodyHtml += `<div class="msg-content">${renderMessageContent(msg, channel.guild)}</div>`;
       for (const embed of msg.embeds ?? []) bodyHtml += renderEmbed(embed.data ?? embed);
       bodyHtml += renderComponents(msg.components);
 
