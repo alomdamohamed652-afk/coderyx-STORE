@@ -138,6 +138,7 @@ module.exports = {
 
   storeCatalog(rootCategories = [], maxProductsPerCategory = 10) {
     const registry = require('./registry');
+    const categories = require('./categoryRegistry');
     const sections = [];
 
     for (const rawPath of rootCategories.slice(0, 12)) {
