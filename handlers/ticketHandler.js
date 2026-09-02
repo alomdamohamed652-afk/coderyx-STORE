@@ -337,13 +337,50 @@ module.exports = {
 
 
   async handleRenameModal(interaction) {
-    if (!permissions.isTicketManager(interaction.member, cfg)) return interaction.reply({ content: '❌ لا تملك صلاحية إدارة التذاكر.', ephemeral: true });
+    if (!permissions.isTicketManager(interaction.member, cfg)) {
+      return interaction.reply({ content: '❌ لا تملك صلاحية إدارة التذاكر.', ephemeral: true });
+    }
+
+    const ticket = db.getTicket(interaction.channel.id);
+    if (!ticket) {
+      return interaction.reply({ content: '❌ هذه القناة ليست تذكرة مسجلة.', ephemeral: true });
+    }
+
     const name = interaction.fields.getTextInputValue('ticket_name').trim();
-    if (!name) return interaction.reply({ content: '❌ اسم التذكرة لا يمكن أن يكون فارغًا.', ephemeral: true });
-    const clean = name.replace(/[\\/]/g, '-').slice(0, 100);
+    if (!name) {
+      return interaction.reply({ content: '❌ اسم التذكرة لا يمكن أن يكون فارغًا.', ephemeral: true });
+    }
+
+    // تغيير الاسم اليدوي لا يغيّر هوية التذكرة:
+    // نوع التذكرة + رقمها يظلان ثابتين، والاسم الجديد يوضع بعدهما.
+    // مثال: P-001-mushir أو CD-014-ahmed
+    const number = ticket.displayNumber || '000';
+    const typeCode = (TYPE_CODES[ticket.type] || 't').toUpperCase();
+    const clean = safeChannelPart(name).slice(0, 70);
+    const newChannelName = `🎫・${typeCode}-${number}•${clean}`.slice(0, 100);
+
     await interaction.deferReply({ ephemeral: true });
-    await interaction.channel.setName(clean);
-    return interaction.editReply({ content: `✅ تم تغيير اسم التذكرة إلى: ${clean}` });
+    await interaction.channel.setName(newChannelName);
+
+    db.recordTicketEvent(interaction.channel.id, 'renamed', {
+      byUserId: interaction.user.id,
+      byUsername: interaction.user.username,
+      details: {
+        name: clean,
+        channelName: newChannelName,
+      },
+    });
+
+    await audit.log(interaction.client, {
+      action: 'Ticket Renamed',
+      actorId: interaction.user.id,
+      ticket: db.getTicket(interaction.channel.id),
+      details: { 'الاسم الجديد': clean },
+    });
+
+    return interaction.editReply({
+      content: `✅ تم تغيير اسم التذكرة إلى: **${newChannelName}**`,
+    });
   },
 
 
