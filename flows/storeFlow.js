@@ -40,7 +40,7 @@ module.exports = {
       if (generalProducts.length) rows.push(components.productSelect(generalProducts));
       rows.push(components.storeProductSearchButton(), ...controls);
       return interaction.channel.send({
-        embeds: [embeds.storeCategories(roots, [], generalProducts)],
+        embeds: [displayMode === 'grouped' ? embeds.storeCatalog(roots, 10) : embeds.storeCategories(roots, [])],
         components: rows.slice(0, 5),
       });
     }
