@@ -11,7 +11,7 @@ module.exports = {
   data: new SlashCommandBuilder()
     .setName('orders')
     .setDescription('عرض آخر 10 طلبات')
-    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
+    .setDefaultMemberPermissions(null),
 
   async execute(interaction) {
     if (!permissions.isAdmin(interaction.member, cfg) && !permissions.isFinance(interaction.member, cfg)) {
