@@ -99,7 +99,7 @@ async function resolveUserName(guild, rawValue, fallback = 'غير معروف') 
   if (!id || !guild) return fallback;
   try {
     const member = await guild.members.fetch(id);
-    return member.displayName || member.user.globalName || member.user.username || fallback;
+    return member.user.globalName || member.user.username || fallback;
   } catch {
     try {
       const user = await guild.client.users.fetch(id);
@@ -138,53 +138,20 @@ function getTeamRoleNames(guild, type) {
     .filter(Boolean);
 }
 
-async function resolveStaffRoleNames(guild, rawValue) {
-  const id = extractUserId(rawValue);
-  if (!id || !guild) return [];
-  try {
-    const member = await guild.members.fetch(id);
-    const allowedRoleIds = [
-      ...cfg.roles.owner,
-      ...cfg.roles.support,
-      ...cfg.roles.dev,
-      ...cfg.roles.close,
-      ...cfg.roles.finance,
-      ...cfg.roles.dashboard,
-    ];
-    return allowedRoleIds
-      .map(roleId => member.roles.cache.get(roleId)?.name)
-      .filter(Boolean);
-  } catch {
-    return [];
-  }
-}
-
-function buildTeamRatingRows(ticketId, hasStaff) {
-  const makeRow = (category, label) => new ActionRowBuilder().addComponents(
-    ...[1, 2, 3, 4, 5].map(stars =>
-      new ButtonBuilder()
-        .setCustomId(`teamrate|${category}|${ticketId}|${stars}`)
-        .setLabel(`${stars} ⭐`)
-        .setStyle(ButtonStyle.Secondary)
+function buildTeamRatingRows(ticketId) {
+  return [
+    new ActionRowBuilder().addComponents(
+      ...[1, 2, 3, 4, 5].map(stars =>
+        new ButtonBuilder()
+          .setCustomId(`teamrate|team|${ticketId}|${stars}`)
+          .setLabel(`${stars} ⭐`)
+          .setStyle(ButtonStyle.Secondary)
+      )
     )
-  );
-
-  const rows = [
-    makeRow('team', 'الفريق'),
   ];
-
-  if (hasStaff) rows.push(makeRow('staff', 'الموظف'));
-  rows.push(makeRow('management', 'الإدارة'));
-  return rows;
 }
 
-function ratingCategoryLabel(category, teamName, staffName) {
-  if (category === 'team') return teamName;
-  if (category === 'staff') return staffName ? `الموظف: ${staffName}` : 'الموظف';
-  return 'الإدارة';
-}
-
-async function sendTeamFeedbackRequest(channel, meta, teamName, staffName) {
+async function sendTeamFeedbackRequest(channel, meta, teamName) {
   const customerId = extractUserId(meta.openedBy);
   if (!customerId) return;
 
@@ -192,26 +159,25 @@ async function sendTeamFeedbackRequest(channel, meta, teamName, staffName) {
     const user = await channel.client.users.fetch(customerId);
     const embed = new EmbedBuilder()
       .setColor(0xe11d48)
-      .setTitle('⭐ تقييم تجربتك مع الفريق')
+      .setTitle('⭐ تقييم تجربتك')
       .setDescription(
-        `نشكر لك ثقتك بنا. قبل إغلاق تجربتك، نريد معرفة رأيك بكل شفافية.\\n\\n` +
-        `🛠️ **${teamName}** — قيّم الفريق الذي تعامل مع طلبك.\\n` +
-        (staffName ? `👤 **${staffName}** — قيّم الموظف الذي استلم التذكرة.\\n` : '') +
-        '🏢 **الإدارة** — قيّم التجربة الإدارية بشكل عام.\\n\\n' +
-        'اختر عدد النجوم المناسب لكل قسم من الأزرار بالأسفل.'
+        `نشكرك على ثقتك بنا ❤️\\n\\n` +
+        `تم إغلاق تذكرتك في **${teamName}**.\\n` +
+        'نريد تقييم تجربتك مع الفريق الذي تعامل مع طلبك.\\n\\n' +
+        '**اختر تقييمًا واحدًا فقط من 1 إلى 5 نجوم.**\\n' +
+        'بعد اختيارك سيتم إغلاق التقييم ولن يمكنك تغييره.'
       )
-      .setFooter({ text: `${channel.guild?.name || 'Discord Server'} • Ticket Feedback` })
+      .setFooter({ text: `${channel.guild?.name || 'Discord Server'} • Team Feedback` })
       .setTimestamp();
 
     await user.send({
       embeds: [embed],
-      components: buildTeamRatingRows(channel.id, !!staffName),
+      components: buildTeamRatingRows(channel.id),
     });
   } catch (err) {
     console.warn('[teamFeedback] تعذر إرسال DM للتقييم:', err.message);
   }
 }
-
 async function logTeamFeedback(client, feedback) {
   if (!cfg.channels.teamFeedbackChannel) return;
 
@@ -221,13 +187,14 @@ async function logTeamFeedback(client, feedback) {
 
     const embed = new EmbedBuilder()
       .setColor(0xe11d48)
-      .setTitle(`⭐ تقييم فريق جديد • تذكرة #${feedback.ticketNumber}`)
+      .setTitle(`⭐ تقييم جديد • ${feedback.teamName || 'الفريق'}`)
+      .setDescription('تقييم تجربة العميل مع الفريق المتخصص في التذكرة.')
       .addFields(
         { name: '👤 العميل', value: feedback.customerUsername || 'غير معروف', inline: true },
-        { name: '🏷️ النوع', value: feedback.teamName || '—', inline: true },
-        { name: '⭐ التقييم', value: `${'⭐'.repeat(feedback.rating)} (${feedback.rating}/5)`, inline: true },
-        { name: '📌 القسم', value: ratingCategoryLabel(feedback.category, feedback.teamName, feedback.staffUsername), inline: true },
-        { name: '👨‍💼 الموظف', value: feedback.staffUsername || 'لم يتم استلام التذكرة', inline: true },
+        { name: '🏷️ الفريق', value: feedback.teamName || '—', inline: true },
+        { name: '⭐ التقييم', value: `${'⭐'.repeat(feedback.rating)} **${feedback.rating}/5**`, inline: true },
+        { name: '🎫 التذكرة', value: `#${feedback.ticketNumber || '—'}`, inline: true },
+        { name: '👨‍💼 المستلم', value: feedback.staffUsername || 'لم تُستلم', inline: true },
       )
       .setFooter({ text: `${channel.guild?.name || 'Discord'} • Team Feedback` })
       .setTimestamp();
@@ -237,7 +204,6 @@ async function logTeamFeedback(client, feedback) {
     console.warn('[teamFeedback] فشل إرسال لوق التقييم:', err.message);
   }
 }
-
 module.exports = {
   async fetchAllMessages(channel) {
     const messages = [];
@@ -269,7 +235,6 @@ module.exports = {
     const closedName = await resolveUserName(channel.guild, meta.closedBy, meta.closedByUsername || 'غير معروف');
     const typeKey = normalizeTypeKey(meta.typeKey || meta.type);
     const teamName = meta.teamRoleName || getTeamRoleNames(channel.guild, typeKey).join(' • ') || getTeamLabel(typeKey);
-    const claimedRoleNames = meta.claimedBy ? await resolveStaffRoleNames(channel.guild, meta.claimedBy) : [];
 
     const rows = messages.map(msg => {
       const time = new Date(msg.createdTimestamp).toLocaleString('ar-EG', {
@@ -392,7 +357,6 @@ module.exports = {
       <div class="person"><div class="label">صاحب التذكرة</div><div class="value">${escapeHtml(openedName)}</div></div>
       <div class="person"><div class="label">المستلم</div><div class="value">${escapeHtml(claimedName)}</div></div>
       <div class="person"><div class="label">فريق التذكرة</div><div class="value">${escapeHtml(teamName)}</div></div>
-      <div class="person"><div class="label">رتبة المستلم</div><div class="value">${escapeHtml(claimedRoleNames.join(' • ') || '—')}</div></div>
       <div class="person"><div class="label">وقت الإنشاء</div><div class="value">${escapeHtml(meta.openedAt ?? '—')}</div></div>
       <div class="person"><div class="label">أُغلقت بواسطة</div><div class="value">${escapeHtml(closedName)}</div></div>
       <div class="person"><div class="label">وقت الإغلاق</div><div class="value">${escapeHtml(meta.closedAt ?? '—')}</div></div>
@@ -448,7 +412,7 @@ module.exports = {
       }
 
       // يرسل تقييم الفريق في الخاص للعميل بعد إغلاق التذكرة.
-      await sendTeamFeedbackRequest(channel, meta, teamName, staffName);
+      await sendTeamFeedbackRequest(channel, meta, teamName);
     } catch (err) {
       console.error('[transcriptHandler] فشل بناء/إرسال الترانسكريبت:', err.message);
     } finally {
@@ -458,39 +422,40 @@ module.exports = {
 
   async handleTeamRating(interaction) {
     const parts = String(interaction.customId).split('|');
-    if (parts.length !== 4 || parts[0] !== 'teamrate') return false;
+    if (parts.length !== 4 || parts[0] !== 'teamrate' || parts[1] !== 'team') return false;
 
     const [, category, ticketId, ratingRaw] = parts;
     const rating = Number(ratingRaw);
-    if (!['team', 'staff', 'management'].includes(category) || !Number.isInteger(rating) || rating < 1 || rating > 5) {
-      return false;
-    }
+    if (category !== 'team' || !Number.isInteger(rating) || rating < 1 || rating > 5) return false;
 
     const ticket = db.getTicket(ticketId);
     if (!ticket) {
-      await interaction.reply({ content: '❌ انتهت صلاحية رابط التقييم.' }).catch(() => {});
+      await interaction.reply({ content: '❌ انتهت صلاحية رابط التقييم.', ephemeral: true }).catch(() => {});
       return true;
     }
 
     if (interaction.user.id !== ticket.userId) {
-      await interaction.reply({ content: '❌ هذا التقييم مخصص لصاحب التذكرة فقط.' }).catch(() => {});
+      await interaction.reply({ content: '❌ هذا التقييم مخصص لصاحب التذكرة فقط.', ephemeral: true }).catch(() => {});
+      return true;
+    }
+
+    if (db.getTeamFeedback(ticketId, 'team')) {
+      await interaction.reply({ content: '✅ تم تسجيل تقييمك بالفعل، شكرًا لك.', ephemeral: true }).catch(() => {});
       return true;
     }
 
     const teamName = getTeamLabel(ticket.type);
-    let staffUsername = null;
+    let staffUsername = ticket.claimedUsername || null;
     if (ticket.claimedBy) {
-      staffUsername = await resolveUserName(interaction.client.guilds.cache.get(ticket.guildId) || null, ticket.claimedBy, ticket.claimedUsername || 'غير معروف');
+      const guild = interaction.client.guilds.cache.get(cfg.guildId);
+      staffUsername = await resolveUserName(guild, ticket.claimedBy, ticket.claimedUsername || 'غير معروف');
     }
-
-    const guild = interaction.client.guilds.cache.get(cfg.guildId);
-    if (guild && !staffUsername && ticket.claimedUsername) staffUsername = ticket.claimedUsername;
 
     const feedback = db.saveTeamFeedback({
       ticketId,
       customerId: ticket.userId,
       customerUsername: ticket.userUsername,
-      category,
+      category: 'team',
       rating,
       staffId: ticket.claimedBy,
       staffUsername,
@@ -500,8 +465,10 @@ module.exports = {
     feedback.ticketNumber = ticket.displayNumber;
     await logTeamFeedback(interaction.client, feedback);
 
-    await interaction.reply({
-      content: `✅ تم تسجيل تقييمك: **${rating}/5 ⭐** — ${ratingCategoryLabel(category, teamName, staffUsername)}`,
+    await interaction.update({ components: [] }).catch(() => {});
+    await interaction.followUp({
+      content: `✅ تم تسجيل تقييمك للفريق: **${rating}/5 ⭐**`,
+      ephemeral: true,
     }).catch(() => {});
 
     return true;
