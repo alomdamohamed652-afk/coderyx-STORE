@@ -9,6 +9,8 @@ const planEditHandler    = require('./planEditHandler');
 const productWizardHandler = require('./productWizardHandler');
 const paymentAdminHandler = require('./paymentAdminHandler');
 const transcriptHandler = require('./transcriptHandler');
+const cfg = require('../config');
+const permissions = require('../core/permissions');
 
 // ─────────────────────────────────────────
 //   Interaction Handler
@@ -55,6 +57,10 @@ module.exports = {
     if (interaction.isModalSubmit()) {
       const id = interaction.customId;
 
+      if ((id.startsWith('dash_') || id.startsWith('wizard_')) && !permissions.isAdmin(interaction.member, cfg)) {
+        return interaction.reply({ content: '❌ لوحة المنتجات متاحة للإدارة فقط.', ephemeral: true });
+      }
+
       if (id === 'payment_modal_add') return paymentAdminHandler.submitAdd(interaction);
       if (id.startsWith('payment_modal_edit_')) return paymentAdminHandler.submitEdit(interaction);
       if (id === 'ticket_member_add') return ticketHandler.handleMemberModal(interaction, 'add');
@@ -96,6 +102,10 @@ module.exports = {
     // ─── Buttons ──────────────────────
     if (interaction.isButton()) {
       const id = interaction.customId;
+
+      if ((id.startsWith('dash_') || id.startsWith('wizard_')) && !permissions.isAdmin(interaction.member, cfg)) {
+        return interaction.reply({ content: '❌ لوحة المنتجات متاحة للإدارة فقط.', ephemeral: true });
+      }
 
       switch (id) {
         case 'claim_ticket':    return ticketHandler.claim(interaction);
