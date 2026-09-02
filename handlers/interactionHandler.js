@@ -58,6 +58,8 @@ module.exports = {
     if (interaction.isModalSubmit()) {
       const id = interaction.customId;
 
+      if (id.startsWith('store_back_')) return storeFlow.handleCategoryBack(interaction);
+
       if ((id.startsWith('dash_') || id.startsWith('wizard_') || id.startsWith('category_')) && !permissions.isAdmin(interaction.member, cfg)) {
         return interaction.reply({ content: '❌ لوحة المنتجات متاحة للإدارة فقط.', ephemeral: true });
       }
