@@ -8,6 +8,8 @@ const dashEmbeds      = require('../core/dashboardEmbeds');
 const dashComponents  = require('../core/dashboardComponents');
 const categories       = require('../core/categoryRegistry');
 
+const pendingCategoryAdds = new Map();
+
 // ─────────────────────────────────────────
 //   Dashboard Handler
 //   إنشاء/تحديث لوحة الإدارة الثابتة
@@ -129,38 +131,212 @@ module.exports = {
 
   async handleCategoryAddModal(interaction) {
     if (!this.checkAccess(interaction)) return;
-    const raw = interaction.fields.getTextInputValue('category_path').trim();
-    const path = categories.normalize(raw);
-    if (!path.length) return interaction.reply({ content: '❌ مسار التصنيف غير صحيح.', ephemeral: true });
+    const name = interaction.fields.getTextInputValue('category_name').trim();
+    if (!name) return interaction.reply({ content: '❌ اسم التصنيف لا يمكن أن يكون فارغًا.', ephemeral: true });
 
-    categories.ensurePath(path);
-    const dashboardLogHandler = require('./dashboardLogHandler');
-    await dashboardLogHandler.log(interaction.client, {
-      actor: interaction.user,
-      action: 'create_category',
-      before: '—',
-      after: path.join(' > '),
-    });
+    pendingCategoryAdds.set(interaction.user.id, { name, createdAt: Date.now() });
+    const all = categories.getAllCategories();
 
     return interaction.reply({
-      embeds: [dashEmbeds.categories()],
-      content: `✅ تم إنشاء/تأكيد التصنيف: **${path.join(' > ')}**`,
+      content: `📁 **إضافة تصنيف جديد: ${name}**\\nاختر المستوى الأب للتصنيف. يمكنك اختيار **عام** لإنشائه كتصنيف رئيسي.`,
+      components: [require('../core/dashboardComponents').categoryParentSelect(all)],
       ephemeral: true,
     });
   },
 
+  async handleCategoryParentSelect(interaction) {
+    if (!this.checkAccess(interaction)) return;
+    const pending = pendingCategoryAdds.get(interaction.user.id);
+    if (!pending) return interaction.reply({ content: '❌ انتهت جلسة إضافة التصنيف. اضغط إضافة تصنيف من جديد.', ephemeral: true });
+
+    const parentId = interaction.values[0] === 'root' ? null : interaction.values[0];
+    const parent = parentId ? categories.getById(parentId) : null;
+    if (parentId && !parent) {
+      pendingCategoryAdds.delete(interaction.user.id);
+      return interaction.reply({ content: '❌ التصنيف الأب غير موجود.', ephemeral: true });
+    }
+
+    try {
+      const path = parent ? [...parent.path, pending.name] : [pending.name];
+      const created = categories.ensurePath(path);
+      pendingCategoryAdds.delete(interaction.user.id);
+
+      const dashboardLogHandler = require('./dashboardLogHandler');
+      await dashboardLogHandler.log(interaction.client, {
+        actor: interaction.user,
+        action: 'create_category',
+        before: '—',
+        after: `${created.id} • ${created.pathKey}`,
+      });
+
+      return interaction.update({
+        content: `✅ تم إنشاء التصنيف **${created.name}**\\n🆔 ${created.id}\\n📁 ${created.pathKey}`,
+        components: [require('../core/dashboardComponents').categoryManagementButtons()],
+        embeds: [dashEmbeds.categories()],
+      });
+    } catch (err) {
+      return interaction.update({ content: `❌ تعذر إنشاء التصنيف: ${err.message}` }).catch(() => {});
+    }
+  },
+
   async handleCategories(interaction) {
     if (!this.checkAccess(interaction)) return;
+    const all = categories.getAllCategories();
     return interaction.reply({
       embeds: [dashEmbeds.categories()],
       components: [
-        new (require('discord.js').ActionRowBuilder)().addComponents(
-          new (require('discord.js').ButtonBuilder)()
-            .setCustomId('dash_category_add')
-            .setLabel('➕ إضافة تصنيف')
-            .setStyle(require('discord.js').ButtonStyle.Success)
-        )
+        require('../core/dashboardComponents').categoryManagementButtons(),
+        require('../core/dashboardComponents').categoryManageSelect(all),
       ],
+      ephemeral: true,
+    });
+  },
+
+  async handleCategoryManageSelect(interaction) {
+    if (!this.checkAccess(interaction)) return;
+    const id = interaction.values[0];
+    if (id === 'none') return interaction.update({ content: 'لا توجد تصنيفات لإدارتها.' });
+
+    const category = categories.getById(id);
+    if (!category) return interaction.update({ content: '❌ التصنيف غير موجود.', components: [] });
+
+    return interaction.update({
+      content: `📁 **${category.name}**\\n🆔 ${category.id}\\n📍 ${category.pathKey}\\n📦 المنتجات: ${categories.getProducts(category.id).length}`,
+      embeds: [dashEmbeds.categories()],
+      components: [
+        new (require('discord.js').ActionRowBuilder)().addComponents(
+          new (require('discord.js').ButtonBuilder)().setCustomId(`dash_category_edit_${category.id}`).setLabel('✏️ تعديل الاسم').setStyle(require('discord.js').ButtonStyle.Primary),
+          new (require('discord.js').ButtonBuilder)().setCustomId(`dash_category_delete_${category.id}`).setLabel('🗑️ حذف').setStyle(require('discord.js').ButtonStyle.Danger),
+        ),
+        require('../core/dashboardComponents').categoryManagementButtons(),
+        require('../core/dashboardComponents').categoryManageSelect(categories.getAllCategories()),
+      ],
+    });
+  },
+
+  async openCategoryEdit(interaction) {
+    if (!this.checkAccess(interaction)) return;
+    const id = interaction.customId.replace('dash_category_edit_', '');
+    const category = categories.getById(id);
+    if (!category) return interaction.reply({ content: '❌ التصنيف غير موجود.', ephemeral: true });
+    return interaction.showModal(require('../core/dashboardComponents').categoryEditModal(category));
+  },
+
+  async handleCategoryEditModal(interaction) {
+    if (!this.checkAccess(interaction)) return;
+    const id = interaction.customId.replace('dash_modal_category_edit_', '');
+    const category = categories.getById(id);
+    if (!category) return interaction.reply({ content: '❌ التصنيف غير موجود.', ephemeral: true });
+    const name = interaction.fields.getTextInputValue('category_name').trim();
+    if (!name) return interaction.reply({ content: '❌ الاسم الجديد غير صحيح.', ephemeral: true });
+
+    try {
+      await interaction.deferReply({ ephemeral: true });
+      const updated = categories.rename(id, name);
+      const dashboardLogHandler = require('./dashboardLogHandler');
+      await dashboardLogHandler.log(interaction.client, {
+        actor: interaction.user,
+        action: 'rename_category',
+        before: `${category.id} • ${category.pathKey}`,
+        after: `${updated.id} • ${updated.pathKey}`,
+      });
+      await this.refreshMainDashboard(interaction.client);
+      return interaction.editReply({
+        content: `✅ تم تعديل التصنيف إلى **${updated.name}**\\n🆔 ${updated.id}\\n📍 ${updated.pathKey}`,
+        embeds: [dashEmbeds.categories()],
+        components: [require('../core/dashboardComponents').categoryManagementButtons(), require('../core/dashboardComponents').categoryManageSelect(categories.getAllCategories())],
+      });
+    } catch (err) {
+      return interaction.editReply({ content: `❌ فشل تعديل التصنيف: ${err.message}` }).catch(() => {});
+    }
+  },
+
+  async openCategoryDelete(interaction) {
+    if (!this.checkAccess(interaction)) return;
+    const id = interaction.customId.replace('dash_category_delete_', '');
+    const category = categories.getById(id);
+    if (!category) return interaction.reply({ content: '❌ التصنيف غير موجود.', ephemeral: true });
+    return interaction.reply({
+      content: `⚠️ سيتم حذف **${category.pathKey}** وجميع التصنيفات الفرعية.\\nالمنتجات التابعة لها ستُنقل تلقائيًا إلى **عام**.`,
+      components: [require('../core/dashboardComponents').categoryDeleteConfirm(category)],
+      ephemeral: true,
+    });
+  },
+
+  async confirmCategoryDelete(interaction) {
+    if (!this.checkAccess(interaction)) return;
+    const id = interaction.customId.replace('dash_category_delete_confirm_', '');
+    try {
+      await interaction.deferUpdate();
+      const result = categories.deleteCategory(id);
+      await require('./dashboardLogHandler').log(interaction.client, {
+        actor: interaction.user,
+        action: 'delete_category',
+        before: `${result.deletedId} • ${result.deletedPath.join(' > ')}`,
+        after: `حذف ${result.deletedCount} تصنيف ونقل ${result.movedProducts.length} منتج إلى عام`,
+      });
+      await this.refreshMainDashboard(interaction.client);
+      return interaction.editReply({
+        content: `🗑️ تم حذف **${result.deletedPath.join(' > ')}**.\\n📦 تم نقل ${result.movedProducts.length} منتج إلى **عام**.`,
+        embeds: [dashEmbeds.categories()],
+        components: [require('../core/dashboardComponents').categoryManagementButtons(), require('../core/dashboardComponents').categoryManageSelect(categories.getAllCategories())],
+      });
+    } catch (err) {
+      return interaction.editReply({ content: `❌ فشل حذف التصنيف: ${err.message}` }).catch(() => {});
+    }
+  },
+
+  async cancelCategoryDelete(interaction) {
+    if (!this.checkAccess(interaction)) return;
+    return interaction.update({
+      content: '↩️ تم إلغاء حذف التصنيف.',
+      components: [require('../core/dashboardComponents').categoryManagementButtons(), require('../core/dashboardComponents').categoryManageSelect(categories.getAllCategories())],
+    });
+  },
+
+  async toggleCategoryDisplayMode(interaction) {
+    if (!this.checkAccess(interaction)) return;
+    const next = categories.getDisplayMode() === 'grouped' ? 'categories_only' : 'grouped';
+    categories.setDisplayMode(next);
+    return interaction.update({
+      content: `🖥️ طريقة عرض المتجر الآن: **${next === 'grouped' ? 'التصنيفات + المنتجات' : 'التصنيفات فقط'}**`,
+      embeds: [dashEmbeds.categories()],
+      components: [require('../core/dashboardComponents').categoryManagementButtons(), require('../core/dashboardComponents').categoryManageSelect(categories.getAllCategories())],
+    });
+  },
+
+  async handleProductCategorySelect(interaction) {
+    if (!this.checkAccess(interaction)) return;
+    const productId = interaction.customId.replace('dash_product_category_select_', '');
+    const product = registry.getById(productId);
+    if (!product) return interaction.update({ content: '❌ المنتج غير موجود.', components: [] });
+
+    const value = interaction.values[0];
+    if (value === 'none') {
+      registry.save(productId, { categoryId: null, categoryPath: ['عام'], category: 'عام' });
+    } else {
+      const category = categories.getById(value);
+      if (!category) return interaction.update({ content: '❌ التصنيف غير موجود.', components: [] });
+      registry.save(productId, { categoryId: category.id, categoryPath: category.path, category: category.pathKey });
+    }
+
+    const updated = registry.getById(productId);
+    await this.refreshMainDashboard(interaction.client);
+    return interaction.update({
+      content: `✅ تم تحديث تصنيف **${updated.name}** إلى: **${updated.category || 'عام'}**`,
+      embeds: [dashEmbeds.productDashboard(updated)],
+      components: dashComponents.productControlButtons(updated),
+    });
+  },
+
+  async openProductCategorySelector(interaction) {
+    if (!this.checkAccess(interaction)) return;
+    const productId = interaction.customId.replace('dash_p_category_', '');
+    const product = registry.getById(productId);
+    if (!product) return interaction.reply({ content: '❌ المنتج غير موجود.', ephemeral: true });
+    return interaction.reply({
+      content: `🗂️ **تصنيف المنتج: ${product.name}**\\nاختر التصنيف من القائمة بدل كتابة الاسم يدويًا.`,
+      components: [dashComponents.productCategorySelect(productId, categories.getAllCategories())],
       ephemeral: true,
     });
   },
