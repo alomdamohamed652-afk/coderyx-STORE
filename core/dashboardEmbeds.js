@@ -54,16 +54,18 @@ module.exports = {
 
   categories() {
     const lines = categories.treeLines();
+    const mode = categories.getDisplayMode();
     return base()
       .setTitle('🗂️ إدارة تصنيفات المنتجات')
       .setDescription(
-        'التصنيفات تدعم مستويات متداخلة، مثل: **FiveM > Systems > Management**.\n\n' +
-        lines.join('\n')
+        'نظام تصنيفات هرمي مع **ID ثابت** لكل تصنيف. يمكنك إنشاء مستويات فرعية، تعديل الأسماء، حذف التصنيفات، وربط المنتجات بالقائمة مباشرة.\\n\\n' +
+        lines.join('\\n')
       )
-      .addFields({
-        name: '💡 طريقة الاستخدام',
-        value: 'أضف تصنيفًا من زر **إضافة تصنيف**، ثم افتح أي منتج واضغط **🗂️ الفئة** لتحديد مساره.'
-      });
+      .addFields(
+        { name: '🖥️ طريقة عرض المتجر', value: mode === 'grouped' ? '📁 التصنيفات + المنتجات' : '📁 التصنيفات فقط', inline: true },
+        { name: '🔎 البحث', value: 'البحث عن المنتج يتم بالـ Product ID / الرقم من زر البحث داخل تذكرة الشراء.', inline: true },
+        { name: '🗑️ عند حذف تصنيف', value: 'كل منتجاته وفروعه تنتقل تلقائيًا إلى **عام**.', inline: false },
+      );
   },
 
   // ───────────────────────────────────
