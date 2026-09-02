@@ -34,6 +34,7 @@ module.exports = {
         new ButtonBuilder().setCustomId('dash_statistics').setLabel('📊 الإحصائيات').setStyle(ButtonStyle.Secondary),
         new ButtonBuilder().setCustomId('dash_payment_methods').setLabel('💳 طرق الدفع').setStyle(ButtonStyle.Primary),
         new ButtonBuilder().setCustomId('dash_settings').setLabel('⚙️ الإعدادات').setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId('dash_categories').setLabel('📁 الفئات').setStyle(ButtonStyle.Primary),
       ),
     ];
   },
