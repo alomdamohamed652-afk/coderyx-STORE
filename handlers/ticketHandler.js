@@ -351,7 +351,7 @@ module.exports = {
     if (permissions.isCloser(interaction.member, cfg)) {
       await channel.send({ content: 'يمكنك تأكيد الحذف الآن:', components: [components.closeConfirm()] });
     } else {
-      const closerMention = permissions.mentionRoles(interaction.guild, cfg.roles.close);
+      const closerMention = permissions.mentionRoles(interaction.guild, cfg.roles.admin);
       await channel.send({
         content: closerMention ? `${closerMention} طلب إغلاق من ${interaction.user} — برجاء المراجعة والتأكيد.` : undefined,
         embeds: [embeds.closeDenied()],
