@@ -4,6 +4,7 @@ const { ModalBuilder, ActionRowBuilder, TextInputBuilder, TextInputStyle, Button
 const paymentMethods = require('../config/paymentMethods');
 const permissions = require('../core/permissions');
 const cfg = require('../config');
+const audit = require('../core/audit');
 
 function allowed(interaction) {
   return permissions.isDashboardAdmin(interaction.member, cfg);
@@ -70,6 +71,7 @@ module.exports = {
     if (!id || !label) return interaction.reply({ content: '❌ المعرّف والاسم مطلوبان.', ephemeral: true });
     try {
       paymentMethods.add({ id, label, emoji, instructions });
+      await audit.log(interaction.client, { action: 'Payment Method Added', actorId: interaction.user.id, details: { 'الطريقة': label, 'المعرف': id } });
       return interaction.reply({ content: `✅ تمت إضافة طريقة الدفع **${emoji} ${label}** وأصبحت متاحة فورًا.`, ephemeral: true });
     } catch (err) {
       return interaction.reply({ content: `❌ ${err.message}`, ephemeral: true });
@@ -115,6 +117,7 @@ module.exports = {
     const instructions = interaction.fields.getTextInputValue('payment_instructions').trim();
     if (!label) return interaction.reply({ content: '❌ الاسم مطلوب.', ephemeral: true });
     paymentMethods.update(id, { label, emoji, instructions });
+    await audit.log(interaction.client, { action: 'Payment Method Updated', actorId: interaction.user.id, details: { 'الطريقة': label, 'المعرف': id } });
     return interaction.reply({ content: `✅ تم تعديل طريقة الدفع **${emoji} ${label}**.`, ephemeral: true });
   },
 
@@ -123,6 +126,7 @@ module.exports = {
     const id = methodId(interaction.customId, 'payment_toggle_');
     const method = paymentMethods.toggle(id);
     if (!method) return interaction.reply({ content: '❌ طريقة الدفع غير موجودة.', ephemeral: true });
+    await audit.log(interaction.client, { action: method.active ? 'Payment Method Enabled' : 'Payment Method Disabled', actorId: interaction.user.id, details: { 'الطريقة': method.label } });
     return interaction.reply({ content: `${method.active ? '🟢 تم تفعيل' : '🟡 تم تعطيل'} **${method.label}**.`, ephemeral: true });
   },
 
@@ -132,6 +136,7 @@ module.exports = {
     const method = paymentMethods.get(id);
     if (!method) return interaction.reply({ content: '❌ طريقة الدفع غير موجودة.', ephemeral: true });
     paymentMethods.remove(id);
+    await audit.log(interaction.client, { action: 'Payment Method Deleted', actorId: interaction.user.id, details: { 'الطريقة': method.label } });
     return interaction.reply({ content: `🗑️ تم حذف طريقة الدفع **${method.label}**.`, ephemeral: true });
   },
 };
