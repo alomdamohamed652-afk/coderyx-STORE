@@ -227,12 +227,69 @@ module.exports = {
     if (action === 'remove_member') return interaction.showModal(components.ticketMemberModal('remove'));
     if (action === 'rename') return interaction.showModal(components.ticketRenameModal());
     if (action === 'transfer') return interaction.update({ content: '📁 اختر القسم الجديد للتذكرة:', components: [components.ticketTransferMenu()] });
+    if (action === 'status') {
+      const ticket = db.getTicket(interaction.channel.id);
+      return interaction.update({ content: '📌 اختر حالة التذكرة:', components: [components.ticketStatusMenu(ticket)] });
+    }
+    if (action === 'staff_transfer') return interaction.showModal(components.ticketStaffTransferModal());
     if (action === 'notify') {
       const ticket = db.getTicket(interaction.channel.id);
       if (!ticket) return interaction.update({ content: '❌ هذه ليست تذكرة.', components: [] });
       await interaction.channel.send({ content: `<@${ticket.userId}> 🔔 **تنبيه:** يوجد تحديث على تذكرتك، يرجى مراجعتها.` });
       return interaction.update({ content: '✅ تم إرسال التنبيه لصاحب التذكرة.', components: [] });
     }
+  },
+
+  async handleStatusSelect(interaction) {
+    if (!permissions.isTicketManager(interaction.member, cfg)) return interaction.reply({ content: '❌ لا تملك صلاحية إدارة التذاكر.', ephemeral: true });
+    const ticket = db.getTicket(interaction.channel.id);
+    if (!ticket) return interaction.reply({ content: '❌ هذه ليست تذكرة.', ephemeral: true });
+    const state = interaction.values[0];
+    if (!['open','claimed','waiting','resolved'].includes(state)) return interaction.reply({ content: '❌ حالة غير صالحة.', ephemeral: true });
+
+    db.updateTicket(interaction.channel.id, { state });
+    db.recordTicketEvent(interaction.channel.id, 'status_changed', { byUserId: interaction.user.id, byUsername: interaction.user.username, details: { from: ticket.state, to: state } });
+    const updated = db.getTicket(interaction.channel.id);
+    await audit.log(interaction.client, { action: 'Ticket Status Changed', actorId: interaction.user.id, ticket: updated, details: { 'من': ticket.state, 'إلى': state } });
+    return interaction.update({ content: `✅ تم تغيير حالة التذكرة إلى **${state}**.`, components: [] });
+  },
+
+  async handleStaffTransferModal(interaction) {
+    if (!permissions.isTicketManager(interaction.member, cfg)) return interaction.reply({ content: '❌ لا تملك صلاحية إدارة التذاكر.', ephemeral: true });
+    const ticket = db.getTicket(interaction.channel.id);
+    if (!ticket) return interaction.reply({ content: '❌ هذه ليست تذكرة.', ephemeral: true });
+
+    const rawId = interaction.fields.getTextInputValue('staff_id').trim().replace(/[<@!>]/g, '');
+    if (!/^\d{17,20}$/.test(rawId)) return interaction.reply({ content: '❌ أرسل Discord User ID صحيح.', ephemeral: true });
+
+    const member = await interaction.guild.members.fetch(rawId).catch(() => null);
+    if (!member) return interaction.reply({ content: '❌ العضو غير موجود في السيرفر.', ephemeral: true });
+    if (!permissions.canClaimType(member, cfg, ticket.type)) return interaction.reply({ content: '❌ هذا العضو ليس ضمن الفريق المختص بهذه التذكرة.', ephemeral: true });
+
+    const oldStaff = ticket.claimedBy;
+    const oldName = ticket.claimedUsername || 'غير مستلم';
+    db.updateTicket(interaction.channel.id, {
+      claimedBy: member.id,
+      claimedUsername: member.user.username,
+      claimedAt: ticket.claimedAt || new Date().toISOString(),
+      state: 'claimed',
+    });
+    db.recordTicketEvent(interaction.channel.id, 'staff_transferred', {
+      byUserId: interaction.user.id,
+      byUsername: interaction.user.username,
+      details: { from: oldName, to: member.user.username },
+    });
+
+    const updated = db.getTicket(interaction.channel.id);
+    await interaction.channel.setName(baseTicketName(updated, { username: member.user.username })).catch(() => {});
+    await interaction.channel.send({ content: `🔄 تم نقل مسؤولية التذكرة إلى ${member}.` });
+    await audit.log(interaction.client, {
+      action: 'Ticket Staff Transferred',
+      actorId: interaction.user.id,
+      ticket: updated,
+      details: { 'من': oldStaff ? `<@${oldStaff}>` : oldName, 'إلى': `<@${member.id}>` },
+    });
+    return interaction.reply({ content: `✅ تم نقل التذكرة إلى ${member}.`, ephemeral: true });
   },
 
   async handleMemberModal(interaction, action) {
