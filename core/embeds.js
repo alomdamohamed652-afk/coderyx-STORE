@@ -371,20 +371,30 @@ module.exports = {
       );
   },
 
-  customerHistory(customer, orders) {
+  customerHistory(customer, orders, profile = null) {
     const paidOrders = orders.filter(o => o.payment?.paid);
     const totalSpent = paidOrders.reduce((sum, o) => sum + Number(o.payment?.finalPrice || 0), 0);
+    const stats = profile?.stats || {};
     const lines = orders.slice(-8).reverse().map(o => {
       const p = o.payment || {};
-      return `${o.id} • ${o.status} • ${p.finalPrice ?? '—'}`;
+      const installment = p.installment?.enabled
+        ? ` • أقساط ${p.installment.paidCount || 0}/${p.installment.count || 0}`
+        : '';
+      return `${o.id} • ${o.status} • ${p.finalPrice ?? '—'}${installment}`;
     }).join('\n') || 'لا توجد طلبات سابقة.';
+
     return base(B.color)
-      .setTitle('👤 تاريخ العميل')
-      .setDescription(`<@${customer.id}>\n\`${customer.username || '—'}\``)
+      .setTitle('👤 ملف العميل')
+      .setDescription(`<@${customer.id}> • \`${customer.username || '—'}\``)
       .addFields(
-        { name: '🧾 الطلبات', value: String(orders.length), inline: true },
-        { name: '💳 المدفوع', value: String(paidOrders.length), inline: true },
-        { name: '💰 إجمالي الإنفاق', value: totalSpent.toLocaleString('ar-EG'), inline: true },
+        { name: '🎫 التذاكر', value: String(stats.tickets ?? 0), inline: true },
+        { name: '🧾 الطلبات', value: String(stats.orders ?? orders.length), inline: true },
+        { name: '💳 المدفوعة', value: String(stats.paidOrders ?? paidOrders.length), inline: true },
+        { name: '💰 إجمالي المدفوع', value: Number(stats.totalSpent ?? totalSpent).toLocaleString('ar-EG'), inline: true },
+        { name: '⏳ تذاكر مفتوحة', value: String(stats.openTickets ?? 0), inline: true },
+        { name: '📆 أقساط مستحقة', value: String(stats.pendingInstallments ?? 0), inline: true },
+        { name: '⭐ تقييمات المنتجات', value: String(profile?.productFeedback?.length ?? 0), inline: true },
+        { name: '⭐ تقييمات الفريق', value: String(profile?.teamFeedback?.length ?? 0), inline: true },
         { name: '📋 آخر الطلبات', value: lines.slice(0, 1024) },
       );
   },
