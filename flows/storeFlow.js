@@ -76,6 +76,7 @@ module.exports = {
     if (children.length) rows.push(components.categorySelect(children));
     if (products.length) rows.push(components.productSelect(products));
     rows.push(components.categoryBackButton());
+    rows.push(components.storeProductSearchButton());
 
     return interaction.editReply({
       embeds: [embeds.storeCategories(children, child, products)],
@@ -99,6 +100,7 @@ module.exports = {
     if (children.length) rows.push(components.categorySelect(children));
     if (products.length) rows.push(components.productSelect(products));
     if (parent.length) rows.push(components.categoryBackButton());
+    rows.push(components.storeProductSearchButton());
 
     return interaction.editReply({
       embeds: [embeds.storeCategories(children, parent, products)],
@@ -152,6 +154,51 @@ module.exports = {
     await interaction.channel.send({
       embeds:     [embeds.productDetail(product)],
       components: [components.planSelect(product)],
+    });
+  },
+
+  // ─── البحث المباشر عن منتج بالرقم ─────────────────
+
+  async handleProductSearch(interaction) {
+    const raw = interaction.fields.getTextInputValue('product_number').trim();
+    const product = registry.findByNumber(raw);
+
+    if (!product) {
+      return interaction.reply({
+        embeds: [embeds.error(`❌ لم يتم العثور على منتج بالرقم أو الـID: **${raw}**`)],
+        ephemeral: true,
+      });
+    }
+
+    const ticket = db.getTicket(interaction.channel.id);
+    if (!ticket) {
+      return interaction.reply({ content: '❌ لا يمكن البحث عن المنتجات خارج التذكرة.', ephemeral: true });
+    }
+
+    if (ticket.orderId) {
+      return interaction.reply({
+        embeds: [embeds.info('تم تسجيل طلبك مسبقًا', `رقم طلبك: \`${ticket.orderId}\`
+
+لو تريد طلب منتج آخر، افتح تذكرة شراء جديدة.`)],
+        ephemeral: true,
+      });
+    }
+
+    db.updateTicket(interaction.channel.id, { selectedProduct: product.id });
+
+    if (product.availability === 'maintenance') {
+      const dashComponents = require('../core/dashboardComponents');
+      return interaction.reply({
+        embeds: [embeds.productDetail(product)],
+        components: [dashComponents.maintenanceButton()],
+        ephemeral: true,
+      });
+    }
+
+    return interaction.reply({
+      embeds: [embeds.productDetail(product)],
+      components: [components.planSelect(product)],
+      ephemeral: true,
     });
   },
 
