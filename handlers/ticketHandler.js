@@ -257,8 +257,9 @@ module.exports = {
     if (action === 'notify') {
       const ticket = db.getTicket(interaction.channel.id);
       if (!ticket) return interaction.update({ content: '❌ هذه ليست تذكرة.', components: [] });
+      await interaction.deferUpdate();
       await interaction.channel.send({ content: `<@${ticket.userId}> 🔔 **تنبيه:** يوجد تحديث على تذكرتك، يرجى مراجعتها.` });
-      return interaction.update({ content: '✅ تم إرسال التنبيه لصاحب التذكرة.', components: [] });
+      return interaction.editReply({ content: '✅ تم إرسال التنبيه لصاحب التذكرة.', components: [] });
     }
   },
 
