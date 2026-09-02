@@ -21,6 +21,7 @@ module.exports = {
   buildPurchaseComponents(ticket, selectorRows = []) {
     return [
       ...selectorRows,
+      components.storeProductSearchButton(),
       components.ticketActions(!!ticket?.claimedBy),
       components.ticketAdminButton(),
     ].slice(0, 5);
@@ -36,14 +37,14 @@ module.exports = {
     if (roots.length > 0) {
       return interaction.channel.send({
         embeds: [embeds.storeCategories(roots, [])],
-        components: [components.categorySelect(roots), ...controls].slice(0, 5),
+        components: this.buildPurchaseComponents(ticket, [components.categorySelect(roots)]).filter((_, i) => extraComponents.length ? true : true),
       });
     }
 
     const products = registry.getVisible();
     return interaction.channel.send({
       embeds: [embeds.store(products)],
-      components: [components.productSelect(products), ...controls].slice(0, 5),
+      components: this.buildPurchaseComponents(ticket, [components.productSelect(products)]),
     });
   },
 
@@ -76,8 +77,6 @@ module.exports = {
     if (children.length) rows.push(components.categorySelect(children));
     if (products.length) rows.push(components.productSelect(products));
     rows.push(components.categoryBackButton());
-    rows.push(components.storeProductSearchButton());
-
     return interaction.editReply({
       embeds: [embeds.storeCategories(children, child, products)],
       components: this.buildPurchaseComponents(updatedTicket, rows),
@@ -100,7 +99,6 @@ module.exports = {
     if (children.length) rows.push(components.categorySelect(children));
     if (products.length) rows.push(components.productSelect(products));
     if (parent.length) rows.push(components.categoryBackButton());
-    rows.push(components.storeProductSearchButton());
 
     return interaction.editReply({
       embeds: [embeds.storeCategories(children, parent, products)],
@@ -136,7 +134,6 @@ module.exports = {
     disabledMenu.components[0].setDisabled(true);
     const preservedRows = interaction.message.components
       .map(row => row.toJSON ? row.toJSON() : row)
-      .filter(raw => !raw.components?.some(comp => comp.custom_id === 'store_category_back'))
       .map(raw => raw.components?.some(comp => comp.custom_id === interaction.customId)
         ? disabledMenu.toJSON()
         : raw);
