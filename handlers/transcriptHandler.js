@@ -206,7 +206,7 @@ async function logTeamFeedback(client, feedback) {
       .setFooter({ text: `${channel.guild?.name || 'Discord'} • Team Feedback` })
       .setTimestamp();
 
-    await channel.send({ embeds: [embed] });
+    await channel.send({ embeds: [embed], allowedMentions: { users: [feedback.customerId, feedback.staffId].filter(Boolean) } });
   } catch (err) {
     console.warn('[teamFeedback] فشل إرسال لوق التقييم:', err.message);
   }
