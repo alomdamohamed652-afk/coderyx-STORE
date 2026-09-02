@@ -58,16 +58,16 @@ function renderMessageContent(msg, guild) {
   return renderContent(content);
 }
 
-function renderEmbed(embed) {
+function renderEmbed(embed, msg = null, guild = null) {
   const color = embed.color ? `#${embed.color.toString(16).padStart(6, '0')}` : '#e11d48';
   let html = `<div class="embed" style="border-right-color:${color}">`;
   if (embed.author?.name) html += `<div class="embed-author">${escapeHtml(embed.author.name)}</div>`;
   if (embed.title) html += `<div class="embed-title">${escapeHtml(embed.title)}</div>`;
-  if (embed.description) html += `<div class="embed-description">${renderContent(embed.description)}</div>`;
+  if (embed.description) html += `<div class="embed-description">${msg ? renderMessageContent({ content: embed.description, mentions: msg.mentions }, guild) : renderContent(embed.description)}</div>`;
   if (embed.fields?.length) {
     html += '<div class="embed-fields">';
     for (const field of embed.fields) {
-      html += `<div class="embed-field"><div class="embed-field-name">${escapeHtml(field.name)}</div><div class="embed-field-value">${renderContent(field.value)}</div></div>`;
+      html += `<div class="embed-field"><div class="embed-field-name">${escapeHtml(field.name)}</div><div class="embed-field-value">${msg ? renderMessageContent({ content: field.value, mentions: msg.mentions }, guild) : renderContent(field.value)}</div></div>`;
     }
     html += '</div>';
   }
@@ -282,7 +282,7 @@ module.exports = {
 
       let bodyHtml = '';
       if (msg.content) bodyHtml += `<div class="msg-content">${renderMessageContent(msg, channel.guild)}</div>`;
-      for (const embed of msg.embeds ?? []) bodyHtml += renderEmbed(embed.data ?? embed);
+      for (const embed of msg.embeds ?? []) bodyHtml += renderEmbed(embed.data ?? embed, msg, channel.guild);
       bodyHtml += renderComponents(msg.components);
 
       for (const att of msg.attachments?.values?.() ?? []) {
