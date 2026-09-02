@@ -98,7 +98,7 @@ module.exports = {
     const rows = [];
     if (children.length) rows.push(components.categorySelect(children));
     if (products.length) rows.push(components.productSelect(products));
-    if (parent.length) rows.push(components.categoryBackButton());
+    rows.push(components.storeCategoryNavigationButtons(parent.length > 0));
 
     return interaction.editReply({
       embeds: [embeds.storeCategories(children, parent, products)],
