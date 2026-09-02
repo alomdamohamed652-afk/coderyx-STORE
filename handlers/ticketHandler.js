@@ -203,9 +203,21 @@ module.exports = {
     if (actionsMessageId) {
       try {
         const actionsMessage = await channel.messages.fetch(actionsMessageId);
-        await actionsMessage.edit({ components: [components.ticketActions(true), components.ticketAdminButton()] });
+
+        // في تذاكر الشراء لا نحذف قوائم الفئات/المنتجات عند الاستلام.
+        // العميل يجب أن يظل قادرًا على اختيار المنتج بعد Claim.
+        if (ticket.type === 'purchase') {
+          const storeFlow = require('../flows/storeFlow');
+          await actionsMessage.edit({
+            components: storeFlow.buildTicketComponents(updatedTicket),
+          });
+        } else {
+          await actionsMessage.edit({
+            components: [components.ticketActions(true), components.ticketAdminButton()],
+          });
+        }
       } catch (err) {
-        console.warn('[ticketHandler] فشل تحديث رسالة الأزرار بعد الاستلام:', err.message);
+        console.warn('[ticketHandler] فشل تحديث مكونات التذكرة بعد الاستلام:', err.message);
       }
     }
   },
