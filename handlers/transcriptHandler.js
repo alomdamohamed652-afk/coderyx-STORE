@@ -138,6 +138,27 @@ function getTeamRoleNames(guild, type) {
     .filter(Boolean);
 }
 
+async function resolveStaffRoleNames(guild, rawValue) {
+  const id = extractUserId(rawValue);
+  if (!id || !guild) return [];
+  try {
+    const member = await guild.members.fetch(id);
+    const allowedRoleIds = [
+      ...cfg.roles.owner,
+      ...cfg.roles.support,
+      ...cfg.roles.dev,
+      ...cfg.roles.close,
+      ...cfg.roles.finance,
+      ...cfg.roles.dashboard,
+    ];
+    return allowedRoleIds
+      .map(roleId => member.roles.cache.get(roleId)?.name)
+      .filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
 function buildTeamRatingRows(ticketId, hasStaff) {
   const makeRow = (category, label) => new ActionRowBuilder().addComponents(
     ...[1, 2, 3, 4, 5].map(stars =>
@@ -248,6 +269,7 @@ module.exports = {
     const closedName = await resolveUserName(channel.guild, meta.closedBy, meta.closedByUsername || 'غير معروف');
     const typeKey = normalizeTypeKey(meta.typeKey || meta.type);
     const teamName = meta.teamRoleName || getTeamRoleNames(channel.guild, typeKey).join(' • ') || getTeamLabel(typeKey);
+    const claimedRoleNames = meta.claimedBy ? await resolveStaffRoleNames(channel.guild, meta.claimedBy) : [];
 
     const rows = messages.map(msg => {
       const time = new Date(msg.createdTimestamp).toLocaleString('ar-EG', {
