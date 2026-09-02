@@ -90,8 +90,7 @@ module.exports = {
       components: [dashComponents.productCategorySelect(productId, categories.getAllCategories())],
       ephemeral: true,
     });
-  }
-
+  },
 
   // ─── فتح قائمة اختيار Badge ───
 
