@@ -440,7 +440,7 @@ module.exports = {
 
     const ticket = db.getTicket(ticketId);
     if (!ticket) {
-      await interaction.reply({ content: '❌ انتهت صلاحية رابط التقييم.', ephemeral: true }).catch(() => {});
+      await interaction.reply({ content: '❌ انتهت صلاحية رابط التقييم.' }).catch(() => {});
       return true;
     }
 
