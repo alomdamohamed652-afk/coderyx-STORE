@@ -21,6 +21,7 @@ module.exports = {
     teamFeedbackChannel: process.env.TEAM_FEEDBACK_CHANNEL_ID,
     transcriptLog: process.env.TRANSCRIPT_LOG_CHANNEL_ID,
     dashboardLog: process.env.DASHBOARD_LOG_CHANNEL_ID,
+    auditLog: process.env.AUDIT_LOG_CHANNEL_ID,
     categoryByType: {
       purchase:   process.env.PURCHASE_CATEGORY_ID,
       support:    process.env.SUPPORT_CATEGORY_ID,
@@ -37,6 +38,7 @@ module.exports = {
     close:   parseList(process.env.CLOSE_ROLE_IDS),
     finance: parseList(process.env.FINANCE_ROLE_IDS),
     dashboard: parseList(process.env.DASHBOARD_ROLE_IDS),
+    teamLeader: parseList(process.env.TEAM_LEADER_ROLE_IDS),
   },
 
   branding: {
@@ -62,6 +64,7 @@ module.exports = {
 
   tickets: {
     prefix: 'TKT',
+    typeCodes: { purchase: 'P', support: 'S', inquiry: 'I', custom_dev: 'CD', report: 'R' },
     unclaimedReminderMinutes: Math.max(1, Number(process.env.UNCLAIMED_TICKET_REMINDER_MINUTES || 10)),
   },
 };
