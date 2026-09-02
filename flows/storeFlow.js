@@ -68,7 +68,7 @@ module.exports = {
     if (children.length === 0 && products.length === 0) {
       return interaction.editReply({
         embeds: [embeds.info('لا توجد منتجات', 'لا توجد منتجات متاحة داخل هذا التصنيف حاليًا.')],
-        components: this.buildPurchaseComponents(updatedTicket, [components.categoryBackButton()]),
+        components: this.buildPurchaseComponents(updatedTicket, [components.storeCategoryNavigationButtons(true)]),
       });
     }
 
