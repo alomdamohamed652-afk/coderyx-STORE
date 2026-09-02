@@ -39,10 +39,10 @@ function baseTicketName(ticket, claimer = null) {
   const opener = ticket?.userUsername || 'customer';
 
   if (claimer) {
-    return `🎫-${typeCode}-${number}•${safeChannelPart(claimer.username)}•${safeChannelPart(opener)}`.slice(0, 100);
+    return `🎫・${typeCode}-${number}•${safeChannelPart(claimer.username)}•${safeChannelPart(opener)}`.slice(0, 100);
   }
 
-  return `🎫-${typeCode}-${number}•${safeChannelPart(opener)}`.slice(0, 100);
+  return `🎫・${typeCode}-${number}•${safeChannelPart(opener)}`.slice(0, 100);
 }
 
 function reminderDelayMs() {
@@ -114,6 +114,15 @@ module.exports = {
         PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages,
       ]),
       ...permissions.buildRoleOverwrites(guild, cfg.roles.dev, [
+        PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages,
+      ]),
+      ...permissions.buildRoleOverwrites(guild, cfg.roles.close, [
+        PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages,
+      ]),
+      ...permissions.buildRoleOverwrites(guild, cfg.roles.finance, [
+        PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages,
+      ]),
+      ...permissions.buildRoleOverwrites(guild, cfg.roles.dashboard, [
         PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages,
       ]),
     ];
@@ -190,7 +199,7 @@ module.exports = {
     if (actionsMessageId) {
       try {
         const actionsMessage = await channel.messages.fetch(actionsMessageId);
-        await actionsMessage.edit({ components: [components.ticketActions(true)] });
+        await actionsMessage.edit({ components: [components.ticketActions(true), components.ticketAdminButton()] });
       } catch (err) {
         console.warn('[ticketHandler] فشل تحديث رسالة الأزرار بعد الاستلام:', err.message);
       }
