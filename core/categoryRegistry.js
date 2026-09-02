@@ -195,11 +195,15 @@ function getByPath(inputPath) {
   return categoryView(store, found);
 }
 
-function getChildren(parentPath = []) {
+function getChildCategories(parentPath = []) {
   const wanted = normalize(parentPath);
   const parent = wanted.length ? getByPath(wanted) : null;
   const store = readStore();
   return childrenOf(store, parent?.id || null).map(c => categoryView(store, c));
+}
+
+function getChildren(parentPath = []) {
+  return getChildCategories(parentPath).map(c => c.path);
 }
 
 function getRootCategories() {
@@ -333,6 +337,7 @@ module.exports = {
   getByPath,
   getRootCategories,
   getChildren,
+  getChildCategories,
   getProducts,
   getGeneralProducts,
   hasChildren,
