@@ -132,11 +132,12 @@ module.exports = {
     // تعطيل قائمة المنتجات فقط مع الحفاظ على أي فئة/رجوع موجودة في نفس الرسالة.
     const disabledMenu = components.productSelect([product]);
     disabledMenu.components[0].setDisabled(true);
-    const preservedRows = interaction.message.components.map(row => {
-      const raw = row.toJSON ? row.toJSON() : row;
-      if (raw.components?.some(comp => comp.custom_id === interaction.customId)) return disabledMenu.toJSON();
-      return raw;
-    });
+    const preservedRows = interaction.message.components
+      .map(row => row.toJSON ? row.toJSON() : row)
+      .filter(raw => !raw.components?.some(comp => comp.custom_id === 'store_category_back'))
+      .map(raw => raw.components?.some(comp => comp.custom_id === interaction.customId)
+        ? disabledMenu.toJSON()
+        : raw);
     await interaction.message.edit({ components: preservedRows }).catch(() => {});
 
     // المنتج تحت الصيانة → نعرض التفاصيل لكن بدون إمكانية شراء فعلية
