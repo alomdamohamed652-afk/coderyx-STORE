@@ -5,6 +5,7 @@ const {
   ButtonBuilder, ButtonStyle,
 } = require('discord.js');
 const registry = require('../core/registry');
+const categories = require('../core/categoryRegistry');
 const dashEmbeds = require('../core/dashboardEmbeds');
 const dashComponents = require('../core/dashboardComponents');
 
@@ -56,7 +57,7 @@ module.exports = {
       .setCustomId('description').setLabel('الوصف').setStyle(TextInputStyle.Paragraph).setRequired(true);
 
     const categoryInput = new TextInputBuilder()
-      .setCustomId('category').setLabel('الفئة').setStyle(TextInputStyle.Short).setRequired(false)
+      .setCustomId('category').setLabel('مسار التصنيف (استخدم > للفروع)').setStyle(TextInputStyle.Short).setRequired(false)
       .setPlaceholder('مثال: FiveM / RP');
 
     const versionInput = new TextInputBuilder()
@@ -80,7 +81,9 @@ module.exports = {
     const id = interaction.fields.getTextInputValue('id').trim().toLowerCase().replace(/\s+/g, '-');
     const name = interaction.fields.getTextInputValue('name').trim();
     const description = interaction.fields.getTextInputValue('description').trim();
-    const category = interaction.fields.getTextInputValue('category').trim() || null;
+    const categoryRaw = interaction.fields.getTextInputValue('category').trim();
+    const categoryPath = categories.normalize(categoryRaw);
+    const category = categoryPath.length ? categoryPath.join(' > ') : 'عام';
     const version = interaction.fields.getTextInputValue('version').trim() || '1.0.0';
 
     if (!/^[a-z0-9-]+$/.test(id)) {
@@ -92,7 +95,7 @@ module.exports = {
     }
 
     const session = getSession(interaction.user.id);
-    session.data = { id, name, description, category, version };
+    session.data = { id, name, description, category, categoryPath: categoryPath.length ? categoryPath : ['عام'], version };
 
     await interaction.reply({
       content: `✅ تم حفظ الخطوة 1 (${name}). اضغط للمتابعة للخطوة 2 (اللون والصور والمميزات):`,
@@ -223,6 +226,7 @@ module.exports = {
     };
 
     try {
+      categories.ensurePath(session.data.categoryPath);
       const created = registry.create(productData);
       sessions.delete(interaction.user.id);
 
