@@ -78,6 +78,26 @@ module.exports = {
     );
   },
 
+  storeCategoryNavigationButtons(showBack = true) {
+    const row = new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId('store_product_search')
+        .setLabel('🔎 بحث برقم المنتج')
+        .setStyle(ButtonStyle.Primary)
+    );
+
+    if (showBack) {
+      row.addComponents(
+        new ButtonBuilder()
+          .setCustomId('store_category_back')
+          .setLabel('↩️ رجوع')
+          .setStyle(ButtonStyle.Secondary)
+      );
+    }
+
+    return row;
+  },
+
   storeProductSearchModal() {
     const modal = new ModalBuilder()
       .setCustomId('store_product_search_modal')
