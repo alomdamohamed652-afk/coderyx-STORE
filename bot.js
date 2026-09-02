@@ -294,7 +294,7 @@ client.on('messageCreate', async (message) => {
 
   // ── !order <ID> ───────────────────────
   if (content.startsWith('!order ')) {
-    if (!isOwner && !isDevTeam) return;
+    if (!isOwner && !isAdmin && !isFinance) return;
     message.delete().catch(() => {});
 
     const orderId = content.split(' ')[1]?.toUpperCase();
