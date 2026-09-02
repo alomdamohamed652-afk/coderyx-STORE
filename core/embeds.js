@@ -138,6 +138,7 @@ module.exports = {
   // ───────────────────────────────────
 
   storeCategories(categories = [], parentId = null, products = [], title = null, subtitle = null) {
+    const registry = require('./registry');
     const lines = [];
 
     if (subtitle) lines.push(subtitle);
