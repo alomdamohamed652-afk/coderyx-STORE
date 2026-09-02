@@ -66,6 +66,36 @@ module.exports = {
   },
 
   // ───────────────────────────────────
+  //   STORE SEARCH: بحث مباشر عن المنتج بالرقم
+  // ───────────────────────────────────
+
+  storeProductSearchButton() {
+    return new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId('store_product_search')
+        .setLabel('🔎 بحث برقم المنتج')
+        .setStyle(ButtonStyle.Primary)
+    );
+  },
+
+  storeProductSearchModal() {
+    const modal = new ModalBuilder()
+      .setCustomId('store_product_search_modal')
+      .setTitle('البحث عن منتج');
+
+    const input = new TextInputBuilder()
+      .setCustomId('product_number')
+      .setLabel('رقم المنتج أو Product ID')
+      .setStyle(TextInputStyle.Short)
+      .setRequired(true)
+      .setMaxLength(100)
+      .setPlaceholder('مثال: 2 أو 2-core-management-system');
+
+    modal.addComponents(new ActionRowBuilder().addComponents(input));
+    return modal;
+  },
+
+  // ───────────────────────────────────
   //   PRODUCT SELECT: اختيار منتج
   // ───────────────────────────────────
 
