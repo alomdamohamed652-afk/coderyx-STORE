@@ -170,6 +170,8 @@ module.exports = {
           { label: 'تغيير اسم التذكرة', value: 'rename', emoji: '✏️', description: 'تعديل اسم قناة التذكرة' },
           { label: 'نقل التذكرة', value: 'transfer', emoji: '🔄', description: 'نقل التذكرة إلى قسم آخر' },
           { label: 'إرسال تنبيه', value: 'notify', emoji: '🔔', description: 'تنبيه صاحب التذكرة داخل القناة' },
+          { label: 'تغيير حالة التذكرة', value: 'status', emoji: '📌', description: 'تحديث حالة التذكرة' },
+          { label: 'نقل المسؤول', value: 'staff_transfer', emoji: '🔄', description: 'تسليم التذكرة لمسؤول آخر' },
         ]),
     );
   },
@@ -269,6 +271,35 @@ module.exports = {
       new ActionRowBuilder().addComponents(amountInput),
       new ActionRowBuilder().addComponents(noteInput),
     );
+    return modal;
+  },
+
+
+  ticketStatusMenu(ticket) {
+    return new ActionRowBuilder().addComponents(
+      new StringSelectMenuBuilder()
+        .setCustomId('ticket_status_menu')
+        .setPlaceholder('📌 اختر حالة التذكرة...')
+        .addOptions([
+          { label: 'Open', value: 'open', emoji: '🟡', default: ticket?.state === 'open' },
+          { label: 'Claimed', value: 'claimed', emoji: '🔵', default: ticket?.state === 'claimed' },
+          { label: 'Waiting', value: 'waiting', emoji: '🟠', default: ticket?.state === 'waiting' },
+          { label: 'Resolved', value: 'resolved', emoji: '🟢', default: ticket?.state === 'resolved' },
+        ])
+    );
+  },
+
+  ticketStaffTransferModal() {
+    const modal = new ModalBuilder()
+      .setCustomId('ticket_staff_transfer_modal')
+      .setTitle('نقل مسؤولية التذكرة');
+    const input = new TextInputBuilder()
+      .setCustomId('staff_id')
+      .setLabel('Discord User ID للمسؤول الجديد')
+      .setStyle(TextInputStyle.Short)
+      .setRequired(true)
+      .setPlaceholder('مثال: 123456789012345678');
+    modal.addComponents(new ActionRowBuilder().addComponents(input));
     return modal;
   },
 
