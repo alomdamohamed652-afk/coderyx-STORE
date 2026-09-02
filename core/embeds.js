@@ -144,16 +144,16 @@ module.exports = {
     if (subtitle) lines.push(subtitle);
 
     if (categories.length) {
-      lines.push('\\n**📁 الأقسام**');
+      lines.push('\n**📁 الأقسام**');
       lines.push(...categories.slice(0, 25).map(c => `${c.emoji || '📁'} **${c.name}**`));
     }
 
     if (products.length) {
-      lines.push('\\n**📦 المنتجات داخل هذا القسم**');
+      lines.push('\n**📦 المنتجات داخل هذا القسم**');
       lines.push(...products.slice(0, 25).map((p, i) => {
         const minPrice = Math.min(...p.plans.map(pl => Number(pl.price) || 0));
         const badge = registry.badgeLabel(p.badge);
-        return `${i + 1}. ${badge ? badge + ' ' : ''}**${p.name}**\\n> ${p.description || 'بدون وصف'}\\n> 💰 يبدأ من **${minPrice} ${p.plans[0]?.currency || ''}**`;
+        return `${i + 1}. ${badge ? badge + ' ' : ''}**${p.name}**\n> ${p.description || 'بدون وصف'}\n> 💰 يبدأ من **${minPrice} ${p.plans[0]?.currency || ''}**`;
       }));
     }
 
@@ -163,7 +163,7 @@ module.exports = {
 
     return base()
       .setTitle(title || (parentId ? '📁 قسم Codryx' : '🛒 متجر Codryx'))
-      .setDescription(lines.join('\\n') || 'اختر القسم المناسب من القائمة أدناه.');
+      .setDescription(lines.join('\n') || 'اختر القسم المناسب من القائمة أدناه.');
   },
 
   // ───────────────────────────────────
