@@ -162,13 +162,18 @@ module.exports = {
       flowMessage = await supportFlow.start({ channel, user, guild }, type);
     }
 
-    // التحكم في التذكرة مستقل تمامًا عن اختيار المنتج.
-    // لذلك استلام التذكرة لا يحذف قائمة المنتجات، واختيار المنتج لا يلغي زر الاستلام.
-    const actionsMessage = await channel.send({
-      embeds: [embeds.info('🎫 إدارة التذكرة', 'استخدم الأزرار التالية لاستلام التذكرة أو طلب إغلاقها.')],
-      components: [components.ticketActions(false), components.ticketAdminButton()],
-    });
-    db.updateTicket(channel.id, { actionsMessageId: actionsMessage.id });
+    // في تذاكر الشراء تكون قوائم التصنيفات/المنتجات وأزرار التذكرة
+    // داخل نفس الرسالة حتى لا يؤثر Claim على اختيار المنتج والعكس.
+    // باقي أنواع التذاكر تحتفظ برسالة إدارة مستقلة.
+    if (type === 'purchase') {
+      if (flowMessage?.id) db.updateTicket(channel.id, { actionsMessageId: flowMessage.id });
+    } else {
+      const actionsMessage = await channel.send({
+        embeds: [embeds.info('🎫 إدارة التذكرة', 'استخدم الأزرار التالية لاستلام التذكرة أو طلب إغلاقها.')],
+        components: [components.ticketActions(false), components.ticketAdminButton()],
+      });
+      db.updateTicket(channel.id, { actionsMessageId: actionsMessage.id });
+    }
     db.recordTicketEvent(channel.id, 'created', { byUserId: user.id, byUsername: user.username, details: { type } });
     await audit.log(interaction.client, { action: 'Ticket Created', actorId: user.id, ticket: db.getTicket(channel.id), details: { 'النوع': TYPE_LABELS[type] || type } });
     return flowMessage;
@@ -209,7 +214,16 @@ module.exports = {
     if (actionsMessageId) {
       try {
         const actionsMessage = await channel.messages.fetch(actionsMessageId);
-        await actionsMessage.edit({ components: [components.ticketActions(true), components.ticketAdminButton()] });
+        if (ticket.type === 'purchase') {
+          const storeFlow = require('../flows/storeFlow');
+          await actionsMessage.edit({
+            components: storeFlow.buildPurchaseComponentsForTicket(updatedTicket),
+          });
+        } else {
+          await actionsMessage.edit({
+            components: [components.ticketActions(true), components.ticketAdminButton()],
+          });
+        }
       } catch (err) {
         console.warn('[ticketHandler] فشل تحديث رسالة الأزرار بعد الاستلام:', err.message);
       }
