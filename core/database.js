@@ -115,7 +115,7 @@ class Database {
     installment.paidCount = installment.payments.length;
     const paidTotal = installment.payments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
     const target = Number(order.payment?.finalPrice || 0);
-    if (installment.count > 0 && installment.paidCount >= installment.count) installment.enabled = true;
+    if (installment.count > 0 && installment.paidCount >= installment.count) installment.completed = true;
     return this.updateOrder(orderId, {
       payment: { ...order.payment, installment, installmentPaidTotal: paidTotal },
     });
@@ -167,6 +167,7 @@ class Database {
       createdAt: new Date().toISOString(),
       reminderSentAt: null,
       state: 'open',
+      history: [{ action: 'created', at: new Date().toISOString(), byUserId: userId, byUsername: userUsername }],
     };
     this._write(db);
     return db.tickets[channelId];
@@ -180,6 +181,96 @@ class Database {
     db.tickets[channelId] = { ...db.tickets[channelId], ...patch };
     this._write(db);
     return db.tickets[channelId];
+  }
+
+  recordTicketEvent(channelId, action, { byUserId = null, byUsername = null, details = {} } = {}) {
+    const db = this._read();
+    const ticket = db.tickets[channelId];
+    if (!ticket) return null;
+    ticket.history ||= [];
+    ticket.history.push({
+      action,
+      at: new Date().toISOString(),
+      byUserId,
+      byUsername,
+      details,
+    });
+    this._write(db);
+    return ticket;
+  }
+
+  getTicketHistory(channelId) {
+    return this._read().tickets[channelId]?.history || [];
+  }
+
+  getCustomerProfile(customerId) {
+    const db = this._read();
+    const orders = Object.values(db.orders || {}).filter(o => o.customer?.discordId === customerId);
+    const tickets = Object.values(db.tickets || {}).filter(t => t.userId === customerId);
+    const productFeedback = Object.values(db.feedback || {}).filter(f => f.customerId === customerId);
+    const teamFeedback = Object.values(db.teamFeedback || {}).filter(f => f.customerId === customerId);
+    const installmentPayments = orders.flatMap(o => (o.payment?.installment?.payments || []).map(p => ({ ...p, orderId: o.id })));
+    const paidOrders = orders.filter(o => o.payment?.paid);
+    const totalSpent = paidOrders.reduce((sum, o) => sum + Number(o.payment?.finalPrice || 0), 0);
+    const totalPaidInstallments = installmentPayments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+    return {
+      customerId,
+      tickets,
+      orders,
+      productFeedback,
+      teamFeedback,
+      installmentPayments,
+      stats: {
+        tickets: tickets.length,
+        orders: orders.length,
+        paidOrders: paidOrders.length,
+        totalSpent,
+        totalPaidInstallments,
+        openTickets: tickets.filter(t => t.state !== 'closed').length,
+        pendingInstallments: orders.reduce((sum, o) => {
+          const i = o.payment?.installment;
+          return sum + (i?.enabled ? Math.max(0, Number(i.count || 0) - Number(i.paidCount || 0)) : 0);
+        }, 0),
+      },
+    };
+  }
+
+  getAnalytics() {
+    const db = this._read();
+    const tickets = Object.values(db.tickets || {});
+    const orders = Object.values(db.orders || {});
+    const teamRatings = Object.values(db.teamFeedback || {});
+    const paid = orders.filter(o => o.payment?.paid);
+    const totalSales = paid.reduce((sum, o) => sum + Number(o.payment?.finalPrice || 0), 0);
+
+    const staffClaims = {};
+    for (const t of tickets) if (t.claimedBy) {
+      const key = t.claimedUsername || t.claimedBy;
+      staffClaims[key] = (staffClaims[key] || 0) + 1;
+    }
+
+    const responseTimes = tickets.filter(t => t.claimedAt).map(t => new Date(t.claimedAt).getTime() - new Date(t.createdAt).getTime()).filter(Number.isFinite);
+    const resolutionTimes = tickets.filter(t => t.closedAt).map(t => new Date(t.closedAt).getTime() - new Date(t.createdAt).getTime()).filter(Number.isFinite);
+    const avg = arr => arr.length ? arr.reduce((a,b) => a+b, 0) / arr.length : 0;
+
+    const ratingAvg = teamRatings.length ? teamRatings.reduce((s,r) => s + Number(r.rating || 0), 0) / teamRatings.length : 0;
+
+    return {
+      tickets,
+      orders,
+      totalTickets: tickets.length,
+      openTickets: tickets.filter(t => ['open','claimed','waiting','resolved'].includes(t.state)).length,
+      closedTickets: tickets.filter(t => t.state === 'closed').length,
+      avgResponseMinutes: avg(responseTimes) / 60000,
+      avgResolutionMinutes: avg(resolutionTimes) / 60000,
+      topStaff: Object.entries(staffClaims).sort((a,b) => b[1]-a[1])[0] || null,
+      ratingAverage: ratingAvg,
+      teamRatings: teamRatings.length,
+      totalCustomers: new Set(tickets.map(t => t.userId).filter(Boolean)).size,
+      totalOrders: orders.length,
+      paidOrders: paid.length,
+      totalSales,
+    };
   }
 
   findOpenTicketByType(userId, type) {
