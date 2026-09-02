@@ -29,7 +29,7 @@ const TYPE_CODES = {
 
 function baseTicketName(ticket, claimer = null) {
   const number = ticket?.displayNumber || '000';
-  const typeCode = TYPE_CODES[ticket?.type] || 't';
+  const typeCode = (TYPE_CODES[ticket?.type] || 't').toUpperCase();
 
   // Discord text channels do not support the exact visual format
   // "P | 123•MUSHI-ER", so we use the closest clean Discord-safe format.
@@ -39,10 +39,10 @@ function baseTicketName(ticket, claimer = null) {
   const opener = ticket?.userUsername || 'customer';
 
   if (claimer) {
-    return `${typeCode}-${number}-${safeChannelPart(claimer.username)}-${safeChannelPart(opener)}`.slice(0, 100);
+    return `🎫-${typeCode}-${number}•${safeChannelPart(claimer.username)}•${safeChannelPart(opener)}`.slice(0, 100);
   }
 
-  return `${typeCode}-${number}-${safeChannelPart(opener)}`.slice(0, 100);
+  return `🎫-${typeCode}-${number}•${safeChannelPart(opener)}`.slice(0, 100);
 }
 
 function reminderDelayMs() {
@@ -142,18 +142,19 @@ module.exports = {
       ephemeral: true,
     }).catch(() => {});
 
-    const actionsMessage = await channel.send({ components: [components.ticketActions(false)] });
-    db.updateTicket(channel.id, { actionsMessageId: actionsMessage.id });
-
     scheduleUnclaimedReminder(interaction.client, channel.id);
 
+    let flowMessage = null;
     if (type === 'purchase') {
       const storeFlow = require('../flows/storeFlow');
-      return storeFlow.start({ channel, user, guild });
+      flowMessage = await storeFlow.start({ channel, user, guild }, [components.ticketActions(false), components.ticketAdminButton()]);
+    } else {
+      const supportFlow = require('../flows/supportFlow');
+      flowMessage = await supportFlow.start({ channel, user, guild }, type, [components.ticketActions(false), components.ticketAdminButton()]);
     }
 
-    const supportFlow = require('../flows/supportFlow');
-    return supportFlow.start({ channel, user, guild }, type);
+    if (flowMessage?.id) db.updateTicket(channel.id, { actionsMessageId: flowMessage.id });
+    return flowMessage;
   },
 
   async claim(interaction) {
@@ -196,6 +197,64 @@ module.exports = {
     }
   },
 
+  async openAdmin(interaction) {
+    if (!permissions.isTicketManager(interaction.member, cfg)) return interaction.reply({ content: '❌ لا تملك صلاحية إدارة التذاكر.', ephemeral: true });
+    return interaction.reply({ content: 'اختر الإجراء المطلوب:', components: [components.ticketAdminMenu()], ephemeral: true });
+  },
+
+  async handleAdminMenu(interaction) {
+    if (!permissions.isTicketManager(interaction.member, cfg)) return interaction.reply({ content: '❌ لا تملك صلاحية إدارة التذاكر.', ephemeral: true });
+    const action = interaction.values[0];
+    if (action === 'add_member') return interaction.showModal(components.ticketMemberModal('add'));
+    if (action === 'remove_member') return interaction.showModal(components.ticketMemberModal('remove'));
+    if (action === 'rename') return interaction.showModal(components.ticketRenameModal());
+    if (action === 'transfer') return interaction.update({ content: '📁 اختر القسم الجديد للتذكرة:', components: [components.ticketTransferMenu()] });
+    if (action === 'notify') {
+      const ticket = db.getTicket(interaction.channel.id);
+      if (!ticket) return interaction.update({ content: '❌ هذه ليست تذكرة.', components: [] });
+      await interaction.channel.send({ content: `<@${ticket.userId}> 🔔 **تنبيه:** يوجد تحديث على تذكرتك، يرجى مراجعتها.` });
+      return interaction.update({ content: '✅ تم إرسال التنبيه لصاحب التذكرة.', components: [] });
+    }
+  },
+
+  async handleMemberModal(interaction, action) {
+    if (!permissions.isTicketManager(interaction.member, cfg)) return interaction.reply({ content: '❌ لا تملك صلاحية إدارة التذاكر.', ephemeral: true });
+    const rawId = interaction.fields.getTextInputValue('member_id').trim().replace(/[<@!>]/g, '');
+    if (!/^\d{17,20}$/.test(rawId)) return interaction.reply({ content: '❌ أرسل Discord User ID صحيح.', ephemeral: true });
+    const member = await interaction.guild.members.fetch(rawId).catch(() => null);
+    if (!member) return interaction.reply({ content: '❌ العضو غير موجود في السيرفر.', ephemeral: true });
+    if (action === 'add') {
+      await interaction.channel.permissionOverwrites.edit(member.id, { ViewChannel: true, SendMessages: true, AttachFiles: true });
+      return interaction.reply({ content: `✅ تمت إضافة ${member} إلى التذكرة.`, ephemeral: true });
+    }
+    await interaction.channel.permissionOverwrites.delete(member.id).catch(() => {});
+    return interaction.reply({ content: `✅ تمت إزالة ${member} من التذكرة.`, ephemeral: true });
+  },
+
+  async handleRenameModal(interaction) {
+    if (!permissions.isTicketManager(interaction.member, cfg)) return interaction.reply({ content: '❌ لا تملك صلاحية إدارة التذاكر.', ephemeral: true });
+    const name = interaction.fields.getTextInputValue('ticket_name').trim();
+    if (!name) return interaction.reply({ content: '❌ اسم التذكرة لا يمكن أن يكون فارغًا.', ephemeral: true });
+    const clean = name.replace(/[\\/]/g, '-').slice(0, 100);
+    await interaction.channel.setName(clean);
+    return interaction.reply({ content: `✅ تم تغيير اسم التذكرة إلى: ${clean}`, ephemeral: true });
+  },
+
+  async transfer(interaction) {
+    if (!permissions.isTicketManager(interaction.member, cfg)) return interaction.reply({ content: '❌ لا تملك صلاحية إدارة التذاكر.', ephemeral: true });
+    const ticket = db.getTicket(interaction.channel.id);
+    if (!ticket) return interaction.reply({ content: 'هذه ليست تذكرة.', ephemeral: true });
+    const newType = interaction.values[0];
+    const categoryId = cfg.channels.categoryByType[newType] || cfg.channels.ticketsCat;
+    const category = interaction.guild.channels.cache.get(categoryId);
+    if (!category) return interaction.reply({ content: '❌ كاتيجوري القسم الجديد غير موجودة.', ephemeral: true });
+    await interaction.channel.setParent(category.id, { lockPermissions: false });
+    db.updateTicket(interaction.channel.id, { type: newType });
+    const updated = db.getTicket(interaction.channel.id);
+    const claimer = updated.claimedBy ? { username: updated.claimedUsername } : null;
+    await interaction.channel.setName(baseTicketName(updated, claimer)).catch(() => {});
+    return interaction.update({ content: `✅ تم نقل التذكرة إلى **${TYPE_LABELS[newType] || newType}**.`, components: [] });
+  },
   async requestClose(interaction) {
     const channel = interaction.channel;
     const ticket = db.getTicket(channel.id);
