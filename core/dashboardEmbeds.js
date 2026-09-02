@@ -33,6 +33,7 @@ module.exports = {
     const orders = Object.values(raw.orders ?? {});
     const paidOrders = orders.filter(o => o.payment?.paid);
     const totalSales = paidOrders.reduce((sum, o) => sum + (o.payment?.finalPrice ?? 0), 0);
+    const analytics = db.getAnalytics();
 
     return base()
       .setTitle('🛠️ Codryx Product Dashboard')
@@ -44,6 +45,8 @@ module.exports = {
         { name: '👁️‍🗨️ مخفية', value: number(registry.countByVisibility('hidden')), inline: true },
         { name: '🧾 إجمالي الطلبات', value: number(orders.length), inline: true },
         { name: '💰 إجمالي المبيعات', value: money(totalSales), inline: true },
+        { name: '🎫 التذاكر المفتوحة', value: number(analytics.openTickets), inline: true },
+        { name: '⭐ متوسط تقييم الفريق', value: analytics.ratingAverage ? analytics.ratingAverage.toFixed(2) + '/5' : '—', inline: true },
       )
       .setFooter({ text: `${B.footer} • آخر تحديث` });
   },
@@ -115,40 +118,35 @@ module.exports = {
 
   statistics() {
     const all = registry.getAll();
-    const db  = require('./database');
-    const raw = db._read();
-    const orders = Object.values(raw.orders ?? {});
-    const paidOrders = orders.filter(o => o.payment?.paid);
-    const totalSales = paidOrders.reduce((sum, o) => sum + (o.payment?.finalPrice ?? 0), 0);
+    const db = require('./database');
+    const analytics = db.getAnalytics();
 
-    // عدد الطلبات لكل منتج
     const countByProduct = {};
-    for (const o of orders) {
+    for (const o of analytics.orders) {
       const pid = o.product?.id;
-      if (!pid) continue;
-      countByProduct[pid] = (countByProduct[pid] ?? 0) + 1;
+      if (pid) countByProduct[pid] = (countByProduct[pid] || 0) + 1;
     }
-
-    let topProduct = null, leastProduct = null;
-    let maxCount = -1, minCount = Infinity;
-    for (const p of all) {
-      const c = countByProduct[p.id] ?? 0;
-      if (c > maxCount) { maxCount = c; topProduct = p; }
-      if (c < minCount) { minCount = c; leastProduct = p; }
-    }
+    const ranked = all.map(p => ({ p, count: countByProduct[p.id] || 0 })).sort((a,b) => b.count-a.count);
+    const top = ranked[0];
 
     return base(B.colorSuccess)
-      .setTitle('📊 إحصائيات المتجر')
+      .setTitle('📊 إحصائيات النظام')
+      .setDescription('نظرة إدارية سريعة على التذاكر، الطلبات، الفريق والعملاء.')
       .addFields(
-        { name: '📦 عدد المنتجات', value: number(all.length), inline: true },
-        { name: '🧾 عدد الطلبات', value: number(orders.length), inline: true },
-        { name: '💰 إجمالي المبيعات', value: money(totalSales), inline: true },
-        { name: '🔥 الأكثر مبيعًا', value: topProduct ? `${topProduct.name} (${maxCount} طلب)` : '—', inline: true },
-        { name: '📉 الأقل مبيعًا', value: leastProduct ? `${leastProduct.name} (${minCount} طلب)` : '—', inline: true },
-        { name: '💳 طلبات مدفوعة', value: String(paidOrders.length), inline: true },
+        { name: '🎫 إجمالي التذاكر', value: number(analytics.totalTickets), inline: true },
+        { name: '🟡 مفتوحة', value: number(analytics.openTickets), inline: true },
+        { name: '🔒 مغلقة', value: number(analytics.closedTickets), inline: true },
+        { name: '⚡ متوسط الاستجابة', value: analytics.avgResponseMinutes ? analytics.avgResponseMinutes.toFixed(1) + ' دقيقة' : '—', inline: true },
+        { name: '⏱️ متوسط الحل', value: analytics.avgResolutionMinutes ? analytics.avgResolutionMinutes.toFixed(1) + ' دقيقة' : '—', inline: true },
+        { name: '👨‍💼 الأكثر استلامًا', value: analytics.topStaff ? analytics.topStaff[0] + ' (' + number(analytics.topStaff[1]) + ')' : '—', inline: true },
+        { name: '⭐ متوسط التقييم', value: analytics.ratingAverage ? analytics.ratingAverage.toFixed(2) + '/5' : '—', inline: true },
+        { name: '👥 العملاء', value: number(analytics.totalCustomers), inline: true },
+        { name: '🧾 الطلبات', value: number(analytics.totalOrders), inline: true },
+        { name: '💳 المدفوعة', value: number(analytics.paidOrders), inline: true },
+        { name: '💰 المبيعات', value: money(analytics.totalSales), inline: true },
+        { name: '🔥 الأكثر طلبًا', value: top ? top.p.name + ' (' + number(top.count) + ')' : '—', inline: true },
       );
   },
-
   // ───────────────────────────────────
   //   MAINTENANCE NOTICE: يظهر للعميل عند الضغط على منتج تحت الصيانة
   // ───────────────────────────────────
