@@ -4,6 +4,7 @@ const registry        = require('../core/registry');
 const dashComponents   = require('../core/dashboardComponents');
 const dashEmbeds       = require('../core/dashboardEmbeds');
 const dashboardLogHandler = require('./dashboardLogHandler');
+const categoryRegistry = require('../core/categoryRegistry');
 
 // ─────────────────────────────────────────
 //   Product Edit Handler
@@ -119,6 +120,48 @@ module.exports = {
     });
 
     await interaction.followUp({
+      embeds: [dashEmbeds.productDashboard(updatedProduct)],
+      components: dashComponents.productControlButtons(updatedProduct),
+      ephemeral: true,
+    }).catch(() => {});
+  },
+
+  async openCategoryModal(interaction) {
+    const productId = extractProductId(interaction.customId, 'dash_p_category_');
+    const product = registry.getById(productId);
+    if (!product) return interaction.reply({ content: '❌ المنتج غير موجود.', ephemeral: true });
+    return interaction.showModal(dashComponents.categoryEditModal(productId, product));
+  },
+
+  async handleCategoryModalSubmit(interaction) {
+    const productId = extractProductId(interaction.customId, 'dash_modal_category_');
+    const productBefore = registry.getById(productId);
+    if (!productBefore) return interaction.reply({ content: '❌ المنتج غير موجود.', ephemeral: true });
+
+    const pathValue = interaction.fields.getTextInputValue('category_path').trim();
+
+    await interaction.deferUpdate();
+
+    const category = pathValue ? categoryRegistry.ensurePath(pathValue) : null;
+    registry.save(productId, {
+      category: category ? categoryRegistry.getPath(category.id) : null,
+      categoryId: category?.id || null,
+    });
+
+    await dashboardLogHandler.log(interaction.client, {
+      actor: interaction.user,
+      action: 'edit_category',
+      product: productBefore,
+      before: productBefore.category || 'غير مصنف',
+      after: category ? categoryRegistry.getPath(category.id) : 'غير مصنف',
+    });
+
+    const dashboardHandler = require('./dashboardHandler');
+    await dashboardHandler.refreshMainDashboard(interaction.client);
+
+    const updatedProduct = registry.getById(productId);
+    await interaction.followUp({
+      content: `✅ تم نقل المنتج إلى: **${category ? categoryRegistry.getPath(category.id) : 'غير مصنف'}**`,
       embeds: [dashEmbeds.productDashboard(updatedProduct)],
       components: dashComponents.productControlButtons(updatedProduct),
       ephemeral: true,
