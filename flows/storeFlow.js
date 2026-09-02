@@ -18,20 +18,20 @@ module.exports = {
 
   // ─── Step 1: عرض المنتجات ───────────
 
-  async start(interaction) {
+  async start(interaction, extraComponents = []) {
     const roots = categories.getRootCategories();
 
     if (roots.length > 0) {
       return interaction.channel.send({
         embeds: [embeds.storeCategories(roots, [])],
-        components: [components.categorySelect(roots)],
+        components: [components.categorySelect(roots), ...extraComponents].slice(0, 5),
       });
     }
 
     const products = registry.getVisible();
     return interaction.channel.send({
       embeds: [embeds.store(products)],
-      components: [components.productSelect(products)],
+      components: [components.productSelect(products), ...extraComponents].slice(0, 5),
     });
   },
 
@@ -50,10 +50,15 @@ module.exports = {
     db.updateTicket(interaction.channel.id, { selectedCategoryPath: child });
 
     const children = categories.getChildren(child);
+    const ticketExtras = [
+      components.ticketActions(!!db.getTicket(interaction.channel.id)?.claimedBy),
+      components.ticketAdminButton(),
+    ];
+
     if (children.length > 0) {
       return interaction.editReply({
         embeds: [embeds.storeCategories(children, child)],
-        components: [components.categorySelect(children), components.categoryBackButton()],
+        components: [components.categorySelect(children), components.categoryBackButton(), ...ticketExtras].slice(0, 5),
       });
     }
 
@@ -61,13 +66,13 @@ module.exports = {
     if (products.length === 0) {
       return interaction.editReply({
         embeds: [embeds.info('لا توجد منتجات', 'لا توجد منتجات متاحة داخل هذا التصنيف حاليًا.')],
-        components: [components.categoryBackButton()],
+        components: [components.categoryBackButton(), ...ticketExtras].slice(0, 5),
       });
     }
 
     return interaction.editReply({
       embeds: [embeds.store(products, child)],
-      components: [components.productSelect(products), components.categoryBackButton()],
+      components: [components.productSelect(products), components.categoryBackButton(), ...ticketExtras].slice(0, 5),
     });
   },
 
@@ -81,9 +86,13 @@ module.exports = {
     db.updateTicket(interaction.channel.id, { selectedCategoryPath: parent });
 
     const children = categories.getChildren(parent);
+    const ticketExtras = [
+      components.ticketActions(!!db.getTicket(interaction.channel.id)?.claimedBy),
+      components.ticketAdminButton(),
+    ];
     return interaction.editReply({
       embeds: [embeds.storeCategories(children, parent)],
-      components: [components.categorySelect(children), ...(parent.length ? [components.categoryBackButton()] : [])],
+      components: [components.categorySelect(children), ...(parent.length ? [components.categoryBackButton()] : []), ...ticketExtras].slice(0, 5),
     });
   },
 
@@ -110,11 +119,15 @@ module.exports = {
 
     db.updateTicket(interaction.channel.id, { selectedProduct: productId });
 
-    // تعطيل قائمة المنتجات بعد الاختيار
-    const products = registry.getVisible();
-    const disabledMenu = components.productSelect(products);
+    // تعطيل قائمة المنتجات فقط، مع الإبقاء على الفئة والاستلام والإدارة.
+    const disabledMenu = components.productSelect([product]);
     disabledMenu.components[0].setDisabled(true);
-    await interaction.message.edit({ components: [disabledMenu, components.categoryBackButton()] }).catch(() => {});
+    const preservedRows = interaction.message.components.map(row => {
+      const raw = row.toJSON ? row.toJSON() : row;
+      if (raw.components?.some(comp => comp.custom_id === interaction.customId)) return disabledMenu.toJSON();
+      return raw;
+    });
+    await interaction.message.edit({ components: preservedRows }).catch(() => {});
 
     // المنتج تحت الصيانة → نعرض التفاصيل لكن بدون إمكانية شراء فعلية
     if (product.availability === 'maintenance') {
