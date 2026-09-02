@@ -33,6 +33,7 @@ module.exports = {
       new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId('dash_statistics').setLabel('📊 الإحصائيات').setStyle(ButtonStyle.Secondary),
         new ButtonBuilder().setCustomId('dash_payment_methods').setLabel('💳 طرق الدفع').setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId('dash_categories').setLabel('🗂️ الفئات').setStyle(ButtonStyle.Primary),
         new ButtonBuilder().setCustomId('dash_settings').setLabel('⚙️ الإعدادات').setStyle(ButtonStyle.Secondary),
       ),
     ];
@@ -73,6 +74,7 @@ module.exports = {
         new ButtonBuilder().setCustomId(`dash_p_avail_${product.id}`).setLabel(availToggleLabel).setStyle(availToggleStyle),
         new ButtonBuilder().setCustomId(`dash_p_vis_${product.id}`).setLabel(visToggleLabel).setStyle(visToggleStyle),
         new ButtonBuilder().setCustomId(`dash_p_badge_${product.id}`).setLabel('🏷️ Badge').setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId(`dash_p_category_${product.id}`).setLabel('🗂️ الفئة').setStyle(ButtonStyle.Primary),
         new ButtonBuilder().setCustomId(`dash_p_version_${product.id}`).setLabel('🔄 الإصدار').setStyle(ButtonStyle.Primary),
       ),
       new ActionRowBuilder().addComponents(
@@ -93,6 +95,39 @@ module.exports = {
         new ButtonBuilder().setCustomId('dash_back_to_list').setLabel('↩️ رجوع للمنتجات').setStyle(ButtonStyle.Secondary),
       ),
     ];
+  },
+
+  categoryAdminModal() {
+    const modal = new ModalBuilder()
+      .setCustomId('dash_modal_category_add')
+      .setTitle('إضافة تصنيف');
+
+    const input = new TextInputBuilder()
+      .setCustomId('category_path')
+      .setLabel('مسار التصنيف')
+      .setStyle(TextInputStyle.Short)
+      .setRequired(true)
+      .setPlaceholder('مثال: FiveM > Systems > Management');
+
+    modal.addComponents(new ActionRowBuilder().addComponents(input));
+    return modal;
+  },
+
+  productCategoryModal(productId, currentPath = []) {
+    const modal = new ModalBuilder()
+      .setCustomId(`dash_modal_category_${productId}`)
+      .setTitle('تغيير تصنيف المنتج');
+
+    const input = new TextInputBuilder()
+      .setCustomId('category_path')
+      .setLabel('مسار التصنيف')
+      .setStyle(TextInputStyle.Short)
+      .setRequired(true)
+      .setValue(currentPath.join(' > ').slice(0, 400))
+      .setPlaceholder('مثال: FiveM > Systems > Management');
+
+    modal.addComponents(new ActionRowBuilder().addComponents(input));
+    return modal;
   },
 
   // ───────────────────────────────────
