@@ -88,6 +88,16 @@ async function resolveUserName(guild, rawValue, fallback = 'غير معروف') 
   }
 }
 
+function normalizeTypeKey(type) {
+  const value = String(type || '').toLowerCase();
+  if (['purchase', 'شراء منتج'].includes(value)) return 'purchase';
+  if (['custom_dev', 'تطوير خاص'].includes(value)) return 'custom_dev';
+  if (['support', 'دعم فني'].includes(value)) return 'support';
+  if (['inquiry', 'استفسار'].includes(value)) return 'inquiry';
+  if (['report', 'بلاغ'].includes(value)) return 'report';
+  return 'support';
+}
+
 function getTeamType(type) {
   return ['purchase', 'custom_dev'].includes(type) ? 'dev' : 'support';
 }
@@ -214,7 +224,8 @@ module.exports = {
       ? await resolveUserName(channel.guild, meta.claimedBy, meta.claimedByUsername || 'غير معروف')
       : 'لم تُستلم';
     const closedName = await resolveUserName(channel.guild, meta.closedBy, meta.closedByUsername || 'غير معروف');
-    const teamName = meta.teamRoleName || getTeamRoleNames(channel.guild, meta.typeKey).join(' • ') || getTeamLabel(meta.typeKey);
+    const typeKey = normalizeTypeKey(meta.typeKey || meta.type);
+    const teamName = meta.teamRoleName || getTeamRoleNames(channel.guild, typeKey).join(' • ') || getTeamLabel(typeKey);
 
     const rows = messages.map(msg => {
       const time = new Date(msg.createdTimestamp).toLocaleString('ar-EG', {
@@ -337,7 +348,7 @@ module.exports = {
       <div class="person"><div class="label">صاحب التذكرة</div><div class="value">${escapeHtml(openedName)}</div></div>
       <div class="person"><div class="label">المستلم</div><div class="value">${escapeHtml(claimedName)}</div></div>
       <div class="person"><div class="label">فريق التذكرة</div><div class="value">${escapeHtml(teamName)}</div></div>
-      <div class="person"><div class="label">رتبة الفريق</div><div class="value">${escapeHtml(getTeamRoleNames(channel.guild, meta.typeKey).join(' • ') || '—')}</div></div>
+      <div class="person"><div class="label">رتبة الفريق</div><div class="value">${escapeHtml(getTeamRoleNames(channel.guild, typeKey).join(' • ') || '—')}</div></div>
       <div class="person"><div class="label">وقت الإنشاء</div><div class="value">${escapeHtml(meta.openedAt ?? '—')}</div></div>
       <div class="person"><div class="label">أُغلقت بواسطة</div><div class="value">${escapeHtml(closedName)}</div></div>
       <div class="person"><div class="label">وقت الإغلاق</div><div class="value">${escapeHtml(meta.closedAt ?? '—')}</div></div>
@@ -373,7 +384,7 @@ module.exports = {
       filePath = await this.buildTranscript(channel, meta);
 
       const logChannel = await channel.client.channels.fetch(cfg.channels.transcriptLog);
-      const ticketType = meta.typeKey || 'support';
+      const ticketType = normalizeTypeKey(meta.typeKey || meta.type);
       const teamName = meta.teamRoleName || getTeamRoleNames(channel.guild, ticketType).join(' • ') || getTeamLabel(ticketType);
       const staffName = meta.claimedBy
         ? await resolveUserName(channel.guild, meta.claimedBy, meta.claimedByUsername || 'غير معروف')
