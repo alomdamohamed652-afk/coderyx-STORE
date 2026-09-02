@@ -33,6 +33,7 @@ module.exports = {
 
   roles: {
     owner:   parseList(process.env.OWNER_ROLE_IDS),
+    admin:   parseList(process.env.ADMIN_ROLE_IDS),
     support: parseList(process.env.SUPPORT_ROLE_IDS),
     dev:     parseList(process.env.DEV_ROLE_IDS),
     close:   parseList(process.env.CLOSE_ROLE_IDS),
