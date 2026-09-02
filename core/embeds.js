@@ -86,13 +86,19 @@ module.exports = {
 
     const t = types[type] ?? { emoji: '📩', label: 'طلب', color: B.color, desc: '' };
 
-    return base(t.color)
+    const embed = base(t.color)
       .setTitle(`${t.emoji} تذكرة ${t.label}`)
       .setDescription(
         `أهلًا ${user} 👋\n\n` +
         `تم فتح تذكرة **${t.label}** بنجاح.\n` +
         `> ${t.desc}`
       );
+
+    if (B.ticketBanner) {
+      embed.setImage(B.ticketBanner);
+    }
+
+    return embed;
   },
 
   // ───────────────────────────────────
