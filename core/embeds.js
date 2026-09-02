@@ -112,10 +112,28 @@ module.exports = {
   },
 
   // ───────────────────────────────────
+  //   STORE CATEGORIES: عرض التصنيفات الهرمية
+  // ───────────────────────────────────
+
+  storeCategories(categoryPaths, parentPath = []) {
+    const lines = categoryPaths.map((path, i) => {
+      const name = path.at(-1);
+      const prefix = path.length > 1 ? `📁 ${path.slice(0, -1).join(' / ')}` : '📁 تصنيف رئيسي';
+      return `**${i + 1}. ${name}**\\n> ${prefix}`;
+    }).join('\\n\\n');
+
+    const breadcrumb = parentPath.length ? `\\n\\n**المسار:** ${parentPath.join(' > ')}` : '';
+
+    return base()
+      .setTitle('🗂️ تصفح منتجات Codryx')
+      .setDescription(`اختر التصنيف المناسب للوصول إلى المنتجات.${breadcrumb}\\n\\n${lines}`);
+  },
+
+  // ───────────────────────────────────
   //   STORE: عرض المنتجات
   // ───────────────────────────────────
 
-  store(products) {
+  store(products, categoryPath = []) {
     const registry = require('./registry');
 
     const list = products.map((p, i) => {
@@ -129,6 +147,7 @@ module.exports = {
     return base()
       .setTitle('📦 منتجات Codryx')
       .setDescription(
+        (categoryPath.length ? `**المسار:** ${categoryPath.join(' > ')}\\n\\n` : '') +
         'اختر المنتج الذي تريد شراؤه:\n\n' + list
       );
   },
