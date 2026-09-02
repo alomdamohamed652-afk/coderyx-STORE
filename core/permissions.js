@@ -40,6 +40,21 @@ module.exports = {
     return this.hasAnyRole(member, cfg.roles.dashboard) || this.isOwner(member, cfg);
   },
 
+  // إدارة التذاكر: أي عضو يملك واحدة على الأقل من الرتب المحددة
+  // في OWNER/SUPPORT/DEV/CLOSE/FINANCE/DASHBOARD يستطيع استخدام لوحة الإدارة.
+  isTicketManager(member, cfg) {
+    if (!member) return false;
+    const roleGroups = [
+      cfg.roles.owner,
+      cfg.roles.support,
+      cfg.roles.dev,
+      cfg.roles.close,
+      cfg.roles.finance,
+      cfg.roles.dashboard,
+    ];
+    return roleGroups.some(ids => this.hasAnyRole(member, ids));
+  },
+
   // يستطيع استلام التذاكر (فريق الدعم + فريق التطوير + المالك) — استخدام عام
   canClaim(member, cfg) {
     return this.isOwner(member, cfg) || this.isSupport(member, cfg) || this.isDev(member, cfg);
