@@ -29,8 +29,8 @@ module.exports = {
       return interaction.reply({ content: '❌ هذا الأوردر غير موجود.', ephemeral: true });
     }
 
-    if (!permissions.isOwner(interaction.member, cfg) && !permissions.isDev(interaction.member, cfg)) {
-      return interaction.reply({ content: '❌ هذا الإجراء لفريق التطوير فقط.', ephemeral: true });
+    if (!permissions.isFinance(interaction.member, cfg)) {
+      return interaction.reply({ content: '❌ إدارة حالة الأوردرات للمالية فقط (Founder / Finance).', ephemeral: true });
     }
 
     const newStatus = interaction.values[0];
@@ -65,6 +65,7 @@ module.exports = {
   // ─── استلام بيانات Modal السعر وتحويل الحالة لبانتظار الدفع ───
 
   async handlePriceModalSubmit(interaction) {
+    if (!permissions.isFinance(interaction.member, cfg)) return interaction.reply({ content: '❌ تحديد السعر والتقسيط للمالية فقط.', ephemeral: true });
     const orderId = extractOrderId(interaction.customId, 'price_modal_');
     const order    = db.getOrder(orderId);
 
@@ -194,7 +195,7 @@ module.exports = {
     if (!order) return interaction.reply({ content: '❌ هذا الأوردر غير موجود.', ephemeral: true });
 
     if (!permissions.isDashboardAdmin(interaction.member, cfg)) {
-      return interaction.reply({ content: '❌ تاريخ العملاء متاح للإدارة المصرح لها فقط.', ephemeral: true });
+      return interaction.reply({ content: '❌ تاريخ العملاء متاح للإدارة فقط.', ephemeral: true });
     }
 
     const profile = db.getCustomerProfile(order.customer.discordId);
