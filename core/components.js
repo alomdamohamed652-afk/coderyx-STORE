@@ -43,8 +43,8 @@ module.exports = {
 
   categorySelect(categories, customId = 'store_category_select') {
     const options = categories.slice(0, 25).map(path => ({
-      label: String(path.at(-1)).slice(0, 100),
-      value: String(path.at(-1)).slice(0, 100),
+      label: String(path.at(-1) ?? 'تصنيف').slice(0, 100),
+      value: String(path.join(' › ')).slice(0, 100),
       description: path.length > 1 ? path.slice(0, -1).join(' > ').slice(0, 100) : 'تصنيف رئيسي',
     }));
 
@@ -123,7 +123,7 @@ module.exports = {
     const options = products.slice(0, 25).map(p => ({
       label: p.name,
       value: p.id,
-      description: p.description.slice(0, 100),
+      description: String(p.description ?? 'منتج Codryx').slice(0, 100),
     }));
 
     return new ActionRowBuilder().addComponents(
