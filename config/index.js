@@ -18,6 +18,7 @@ module.exports = {
     ordersLog:    process.env.ORDERS_LOG_CHANNEL_ID,
     customersChannel: process.env.CUSTOMERS_CHANNEL_ID,
     feedbackChannel: process.env.FEEDBACK_CHANNEL_ID,
+    teamFeedbackChannel: process.env.TEAM_FEEDBACK_CHANNEL_ID,
     transcriptLog: process.env.TRANSCRIPT_LOG_CHANNEL_ID,
     dashboardLog: process.env.DASHBOARD_LOG_CHANNEL_ID,
     categoryByType: {
