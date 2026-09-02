@@ -21,7 +21,7 @@ const permissions = require('../core/permissions');
 // منع معالجة ضغطتين/أوامر متتالية بسرعة من نفس المستخدم (double-click أو ضغط مزدوج على Enter)
 // يحفظ آخر وقت تفاعل لكل (مستخدم + نوع التفاعل) لمدة 2 ثانية
 const recentInteractions = new Map();
-const DEBOUNCE_MS = 2000;
+const DEBOUNCE_MS = 650;
 
 function getInteractionKey(interaction) {
   if (interaction.isChatInputCommand()) {
