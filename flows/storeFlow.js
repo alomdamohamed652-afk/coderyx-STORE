@@ -50,24 +50,23 @@ module.exports = {
     db.updateTicket(interaction.channel.id, { selectedCategoryPath: child });
 
     const children = categories.getChildren(child);
-    if (children.length > 0) {
-      return interaction.editReply({
-        embeds: [embeds.storeCategories(children, child)],
-        components: [components.categorySelect(children), components.categoryBackButton()],
-      });
-    }
-
     const products = categories.getProducts(child);
-    if (products.length === 0) {
+
+    if (children.length === 0 && products.length === 0) {
       return interaction.editReply({
         embeds: [embeds.info('لا توجد منتجات', 'لا توجد منتجات متاحة داخل هذا التصنيف حاليًا.')],
         components: [components.categoryBackButton()],
       });
     }
 
+    const rows = [];
+    if (children.length) rows.push(components.categorySelect(children));
+    if (products.length) rows.push(components.productSelect(products));
+    rows.push(components.categoryBackButton());
+
     return interaction.editReply({
-      embeds: [embeds.store(products, child)],
-      components: [components.productSelect(products), components.categoryBackButton()],
+      embeds: [embeds.storeCategories(children, child, products)],
+      components: rows.slice(0, 5),
     });
   },
 
