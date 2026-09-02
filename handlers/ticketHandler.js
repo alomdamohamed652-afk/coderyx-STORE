@@ -115,21 +115,16 @@ module.exports = {
       ...permissions.buildRoleOverwrites(guild, cfg.roles.owner, [
         PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ManageChannels,
       ]),
+      ...permissions.buildRoleOverwrites(guild, cfg.roles.admin, [
+        PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ManageChannels,
+      ]),
       ...permissions.buildRoleOverwrites(guild, cfg.roles.support, [
         PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages,
       ]),
       ...permissions.buildRoleOverwrites(guild, cfg.roles.dev, [
         PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages,
       ]),
-      ...permissions.buildRoleOverwrites(guild, cfg.roles.close, [
-        PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages,
-      ]),
-      ...permissions.buildRoleOverwrites(guild, cfg.roles.finance, [
-        PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages,
-      ]),
-      ...permissions.buildRoleOverwrites(guild, cfg.roles.dashboard, [
-        PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages,
-      ]),
+
     ];
 
     const typeCategoryId = cfg.channels.categoryByType[type];
