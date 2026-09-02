@@ -18,20 +18,32 @@ module.exports = {
 
   // ─── Step 1: عرض المنتجات ───────────
 
+  buildPurchaseComponents(ticket, selectorRows = []) {
+    return [
+      ...selectorRows,
+      components.ticketActions(!!ticket?.claimedBy),
+      components.ticketAdminButton(),
+    ].slice(0, 5);
+  },
+
   async start(interaction, extraComponents = []) {
     const roots = categories.getRootCategories();
+    const ticket = db.getTicket(interaction.channel.id);
+    const controls = extraComponents.length
+      ? extraComponents
+      : [components.ticketActions(!!ticket?.claimedBy), components.ticketAdminButton()];
 
     if (roots.length > 0) {
       return interaction.channel.send({
         embeds: [embeds.storeCategories(roots, [])],
-        components: [components.categorySelect(roots), ...extraComponents].slice(0, 5),
+        components: [components.categorySelect(roots), ...controls].slice(0, 5),
       });
     }
 
     const products = registry.getVisible();
     return interaction.channel.send({
       embeds: [embeds.store(products)],
-      components: [components.productSelect(products), ...extraComponents].slice(0, 5),
+      components: [components.productSelect(products), ...controls].slice(0, 5),
     });
   },
 
@@ -49,13 +61,14 @@ module.exports = {
 
     db.updateTicket(interaction.channel.id, { selectedCategoryPath: child });
 
+    const updatedTicket = db.getTicket(interaction.channel.id);
     const children = categories.getChildren(child);
     const products = categories.getProducts(child);
 
     if (children.length === 0 && products.length === 0) {
       return interaction.editReply({
         embeds: [embeds.info('لا توجد منتجات', 'لا توجد منتجات متاحة داخل هذا التصنيف حاليًا.')],
-        components: [components.categoryBackButton()],
+        components: this.buildPurchaseComponents(updatedTicket, [components.categoryBackButton()]),
       });
     }
 
@@ -66,7 +79,7 @@ module.exports = {
 
     return interaction.editReply({
       embeds: [embeds.storeCategories(children, child, products)],
-      components: rows.slice(0, 5),
+      components: this.buildPurchaseComponents(updatedTicket, rows),
     });
   },
 
@@ -79,6 +92,7 @@ module.exports = {
 
     db.updateTicket(interaction.channel.id, { selectedCategoryPath: parent });
 
+    const updatedTicket = db.getTicket(interaction.channel.id);
     const children = categories.getChildren(parent);
     const products = categories.getProducts(parent);
     const rows = [];
@@ -88,7 +102,7 @@ module.exports = {
 
     return interaction.editReply({
       embeds: [embeds.storeCategories(children, parent, products)],
-      components: rows.slice(0, 5),
+      components: this.buildPurchaseComponents(updatedTicket, rows),
     });
   },
 
