@@ -117,22 +117,32 @@ module.exports = {
 
   store(products) {
     const registry = require('./registry');
+    const groups = new Map();
 
-    const list = products.map((p, i) => {
-      const minPrice = Math.min(...p.plans.map(pl => pl.price));
-      const badge = registry.badgeLabel(p.badge);
-      const nameWithBadge = badge ? `${badge} **${p.name}**` : `**${p.name}**`;
-      const maintenanceNote = p.availability === 'maintenance' ? '\n> 🛠️ تحت الصيانة حاليًا' : '';
-      return `\`${i + 1}\` ${nameWithBadge}\n> ${p.description}\n> 💰 يبدأ من **${minPrice} ${p.plans[0]?.currency ?? 'SAR'}**${maintenanceNote}`;
-    }).join('\n\n');
+    for (const p of products) {
+      const category = String(p.category || 'عام').trim() || 'عام';
+      if (!groups.has(category)) groups.set(category, []);
+      groups.get(category).push(p);
+    }
+
+    const sections = [];
+    for (const [category, items] of groups) {
+      const lines = items.slice(0, 10).map(p => {
+        const minPrice = Math.min(...p.plans.map(pl => pl.price));
+        const badge = registry.badgeLabel(p.badge);
+        const nameWithBadge = badge ? badge + ' **' + p.name + '**' : '**' + p.name + '**';
+        const maintenanceNote = p.availability === 'maintenance' ? '\\n> 🛠️ تحت الصيانة حاليًا' : '';
+        return '• ' + nameWithBadge + '\\n  > ' + p.description + '\\n  > 💰 يبدأ من **' + minPrice + ' ' + (p.plans[0]?.currency ?? 'SAR') + '**' + maintenanceNote;
+      }).join('\\n\\n');
+      sections.push('### 📁 ' + category + '\\n' + lines);
+    }
 
     return base()
       .setTitle('📦 منتجات Codryx')
       .setDescription(
-        'اختر المنتج الذي تريد شراؤه:\n\n' + list
+        'اختر الفئة أولًا، ثم اختر المنتج من القائمة.\\n\\n' + sections.join('\\n\\n')
       );
   },
-
   // ───────────────────────────────────
   //   PRODUCT DETAIL: تفاصيل منتج واحد
   // ───────────────────────────────────
