@@ -6,6 +6,7 @@ const components  = require('../core/components');
 const db           = require('../core/database');
 const cfg          = require('../config');
 const permissions  = require('../core/permissions');
+const categoryRegistry = require('../core/categoryRegistry');
 
 // ─────────────────────────────────────────
 //   Store Flow
@@ -19,6 +20,8 @@ module.exports = {
 
   async start(interaction, extraComponents = []) {
     const products = registry.getVisible();
+    const categories = categoryRegistry.getChildren(null);
+    const uncategorized = products.filter(p => !categoryRegistry.categoryIdForProduct(p));
 
     if (products.length === 0) {
       return interaction.channel.send({
@@ -27,9 +30,78 @@ module.exports = {
       });
     }
 
+    // قبل إنشاء الفئات، نحافظ على المنتجات القديمة في واجهة مباشرة.
+    if (!categories.length) {
+      return interaction.channel.send({
+        embeds: [embeds.store(products)],
+        components: [components.productSelect(products), ...extraComponents],
+      });
+    }
+
+    const root = [...categories];
+    if (uncategorized.length) {
+      root.push({ id: '__uncategorized', name: 'غير مصنف', emoji: '📦', parentId: null, order: 999999 });
+    }
+
     return interaction.channel.send({
-      embeds:     [embeds.store(products)],
-      components: [components.productSelect(products), ...extraComponents],
+      embeds: [embeds.storeCategories(root, null, uncategorized)],
+      components: [components.categorySelect(root, 'root'), ...extraComponents].slice(0, 5),
+    });
+  },
+
+  async handleCategorySelect(interaction) {
+    const categoryId = interaction.values[0];
+    const category = categoryRegistry.get(categoryId);
+    if (!category && categoryId !== '__uncategorized') {
+      return interaction.reply({ content: '❌ الفئة غير موجودة أو تم حذفها.', ephemeral: true });
+    }
+
+    const children = categoryId === '__uncategorized' ? [] : categoryRegistry.getChildren(categoryId);
+    const products = categoryId === '__uncategorized'
+      ? registry.getVisible().filter(p => !categoryRegistry.categoryIdForProduct(p))
+      : registry.getVisible().filter(p => categoryRegistry.categoryIdForProduct(p) === categoryId);
+
+    const rows = [];
+    if (children.length) rows.push(components.categorySelect(children, categoryId));
+    if (products.length) rows.push(components.productSelect(products, categoryId));
+    rows.push(components.storeBackButton(category?.parentId || 'root'));
+    rows.push(components.ticketActions(false), components.ticketAdminButton());
+
+    return interaction.update({
+      embeds: [embeds.storeCategories(children, categoryId === '__uncategorized' ? null : categoryId, products)],
+      components: rows.slice(0, 5),
+    });
+  },
+
+  async handleCategoryBack(interaction) {
+    const target = interaction.customId.slice('store_back_'.length);
+    if (target === 'root') {
+      const categories = categoryRegistry.getChildren(null);
+      const products = registry.getVisible();
+      const uncategorized = products.filter(p => !categoryRegistry.categoryIdForProduct(p));
+      const root = [...categories];
+      if (uncategorized.length) root.push({ id: '__uncategorized', name: 'غير مصنف', emoji: '📦', parentId: null, order: 999999 });
+
+      return interaction.update({
+        embeds: [embeds.storeCategories(root, null, uncategorized)],
+        components: [components.categorySelect(root, 'root'), components.ticketActions(false), components.ticketAdminButton()],
+      });
+    }
+
+    const category = categoryRegistry.get(target);
+    if (!category) return interaction.reply({ content: '❌ الفئة غير موجودة.', ephemeral: true });
+
+    const children = categoryRegistry.getChildren(target);
+    const products = registry.getVisible().filter(p => categoryRegistry.categoryIdForProduct(p) === target);
+    const rows = [];
+    if (children.length) rows.push(components.categorySelect(children, target));
+    if (products.length) rows.push(components.productSelect(products, target));
+    rows.push(components.storeBackButton(category.parentId || 'root'));
+    rows.push(components.ticketActions(false), components.ticketAdminButton());
+
+    return interaction.update({
+      embeds: [embeds.storeCategories(children, category.parentId, products, category.name, `المسار: **${categoryRegistry.getPath(target)}**`)],
+      components: rows.slice(0, 5),
     });
   },
 
@@ -56,11 +128,15 @@ module.exports = {
 
     db.updateTicket(interaction.channel.id, { selectedProduct: productId });
 
-    // تعطيل قائمة المنتجات بعد الاختيار
-    const products = registry.getVisible();
-    const disabledMenu = components.productSelect(products);
+    // تعطيل قائمة المنتجات فقط، مع الحفاظ على صفوف الاستلام والإدارة والفئات.
+    const disabledMenu = components.productSelect([product], ticket?.selectedProduct || 'selected');
     disabledMenu.components[0].setDisabled(true);
-    await interaction.message.edit({ components: [disabledMenu] }).catch(() => {});
+    const preservedRows = interaction.message.components.map(row => {
+      const raw = row.toJSON ? row.toJSON() : row;
+      if (raw.components?.some(comp => comp.custom_id === interaction.customId)) return disabledMenu.toJSON();
+      return raw;
+    });
+    await interaction.message.edit({ components: preservedRows }).catch(() => {});
 
     // المنتج تحت الصيانة → نعرض التفاصيل لكن بدون إمكانية شراء فعلية
     if (product.availability === 'maintenance') {
