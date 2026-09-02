@@ -7,6 +7,7 @@ const registry      = require('../core/registry');
 const db            = require('../core/database');
 const permissions   = require('../core/permissions');
 const orderStatus   = require('../core/orderStatus');
+const audit         = require('../core/audit');
 
 // ─────────────────────────────────────────
 //   Order Handler
@@ -115,6 +116,7 @@ module.exports = {
 
     // 3) تحديث رسالة اللوج في مكانها
     await this.refreshLogMessage(client, orderId);
+    await audit.log(client, { action: `Order Status: ${newStatus}`, actorId: byUserId, order, details: { 'الحالة الجديدة': statusInfo?.label || newStatus } });
 
     return order;
   },
@@ -123,7 +125,7 @@ module.exports = {
   // يحفظ السعر، يحوّل الحالة لـ awaiting_payment، ويرسل أزرار اختيار
   // طريقة الدفع للعميل داخل تذكرته
 
-  async setPriceAndRequestPayment(client, orderId, { originalPrice, discountAmount = 0, discountReason = null }, byUserId) {
+  async setPriceAndRequestPayment(client, orderId, { originalPrice, discountAmount = 0, discountReason = null, installment = null }, byUserId) {
     const finalPrice = Math.max(0, originalPrice - discountAmount);
 
     let order = db.setPayment(orderId, {
@@ -131,6 +133,7 @@ module.exports = {
       discountAmount,
       discountReason,
       finalPrice,
+      ...(installment ? { installment } : {}),
     });
     if (!order) return null;
 
@@ -150,6 +153,7 @@ module.exports = {
       }
     }
 
+    await audit.log(client, { action: 'Order Price Set', actorId: byUserId, order, details: { 'السعر النهائي': finalPrice, 'تقسيط': installment?.enabled ? `${installment.count} أقساط` : 'لا' } });
     return order;
   },
 
@@ -169,7 +173,9 @@ module.exports = {
     await interaction.channel.send({
       content: financeMention ? `${financeMention} 💰 طلب دفع جديد — \`${order.id}\`` : undefined,
       embeds: [embeds.paymentMethodChosen(order)],
+      allowedMentions: { roles: cfg.roles.finance },
     });
+    await audit.log(client, { action: 'Payment Method Selected', actorId: interaction.user.id, order, details: { 'طريقة الدفع': method } });
 
     return order;
   },
@@ -200,6 +206,8 @@ module.exports = {
       }
     }
 
+    await audit.log(client, { action: 'Payment Confirmed', actorId: byUserId, order, details: { 'طريقة الدفع': order.payment?.method || '—', 'المبلغ': order.payment?.finalPrice || 0 } });
+
     // تحديث روم العملاء بالإحصائيات الجديدة
     try {
       const customersChannelHandler = require('./customersChannelHandler');
@@ -228,6 +236,7 @@ module.exports = {
     } else {
       console.warn('[orderHandler] ⚠️ FEEDBACK_CHANNEL_ID غير محدد في .env — لم يُرسل التقييم لأي قناة');
     }
+    await audit.log(client, { action: 'Product Feedback Submitted', actorId: customerId, order, details: { 'التقييم': `${rating}/5`, 'الملاحظة': comment || '—' } });
 
     return feedback;
   },
