@@ -70,7 +70,7 @@ module.exports = {
   // ───────────────────────────────────
 
   productSelect(products) {
-    const options = products.map(p => ({
+    const options = products.slice(0, 25).map(p => ({
       label: p.name,
       value: p.id,
       description: p.description.slice(0, 100),
@@ -89,7 +89,7 @@ module.exports = {
   // ───────────────────────────────────
 
   planSelect(product) {
-    const options = product.plans.map((p, i) => ({
+    const options = product.plans.slice(0, 25).map((p, i) => ({
       label: `${p.name} — ${p.price} ${p.currency}`,
       value: String(i),
       description: (p.features ?? []).slice(0, 2).join(' • ').slice(0, 100) || undefined,
