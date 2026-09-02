@@ -9,7 +9,7 @@ module.exports = {
   data: new SlashCommandBuilder()
     .setName('panel')
     .setDescription('إرسال إيمبيد متجر Codryx في هذه القناة')
-    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
+    .setDefaultMemberPermissions(null),
 
   async execute(interaction) {
     if (cfg.roles.owner.length === 0) {
