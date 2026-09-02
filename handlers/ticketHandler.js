@@ -216,16 +216,16 @@ module.exports = {
     if (actionsMessageId) {
       try {
         const actionsMessage = await channel.messages.fetch(actionsMessageId);
-        const preservedRows = actionsMessage.components.map(row => {
-          const raw = row.toJSON ? row.toJSON() : row;
-          if (raw.components?.some(comp => comp.custom_id === 'claim_ticket' || comp.custom_id === 'request_close')) {
-            return components.ticketActions(true).toJSON();
-          }
-          return raw;
+        // لوحة التحكم الخاصة بالتذكرة مستقلة عن قائمة المنتجات؛ الاستلام
+        // يزيل زر الاستلام فقط ويحافظ دائمًا على "إدارة التذكرة" و"طلب الإغلاق".
+        await actionsMessage.edit({
+          components: [
+            components.ticketActions(true),
+            components.ticketAdminButton(),
+          ],
         });
-        await actionsMessage.edit({ components: preservedRows });
       } catch (err) {
-        console.warn('[ticketHandler] فشل تحديث رسالة الأزرار بعد الاستلام:', err.message);
+        console.warn('[ticketHandler] فشل تحديث لوحة التذكرة بعد الاستلام:', err.message);
       }
     }
   },
