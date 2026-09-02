@@ -134,11 +134,18 @@ class Database {
 
     const serialized = JSON.stringify(data, null, 2);
 
-    // كتابة ذرية: اكتب أولًا ثم استبدل الملف الأساسي.
-    fs.writeFileSync(this._tmpPath, serialized, 'utf8');
-    fs.renameSync(this._tmpPath, this._dbPath);
-
-    this._data = data;
+    // كتابة ذرية وآمنة حتى مع تزامن أكثر من Interaction:
+    // كل عملية كتابة تستخدم ملفًا مؤقتًا مختلفًا، ثم تستبدله بالملف الأساسي.
+    const tmpPath = this._dbPath + '.' + process.pid + '.' + Date.now() + '.' + Math.random().toString(16).slice(2) + '.tmp';
+    try {
+      fs.writeFileSync(tmpPath, serialized, 'utf8');
+      fs.renameSync(tmpPath, this._dbPath);
+      this._data = data;
+    } finally {
+      try {
+        if (fs.existsSync(tmpPath)) fs.unlinkSync(tmpPath);
+      } catch {}
+    }
   }
 
   _nextOrderId() {
