@@ -11,6 +11,7 @@ const paymentAdminHandler = require('./paymentAdminHandler');
 const transcriptHandler = require('./transcriptHandler');
 const cfg = require('../config');
 const permissions = require('../core/permissions');
+const categoryAdminHandler = require('./categoryAdminHandler');
 
 // ─────────────────────────────────────────
 //   Interaction Handler
@@ -57,10 +58,11 @@ module.exports = {
     if (interaction.isModalSubmit()) {
       const id = interaction.customId;
 
-      if ((id.startsWith('dash_') || id.startsWith('wizard_')) && !permissions.isAdmin(interaction.member, cfg)) {
+      if ((id.startsWith('dash_') || id.startsWith('wizard_') || id.startsWith('category_')) && !permissions.isAdmin(interaction.member, cfg)) {
         return interaction.reply({ content: '❌ لوحة المنتجات متاحة للإدارة فقط.', ephemeral: true });
       }
 
+      if (id === 'category_add_modal') return categoryAdminHandler.submitAdd(interaction);
       if (id === 'payment_modal_add') return paymentAdminHandler.submitAdd(interaction);
       if (id.startsWith('payment_modal_edit_')) return paymentAdminHandler.submitEdit(interaction);
       if (id === 'ticket_member_add') return ticketHandler.handleMemberModal(interaction, 'add');
@@ -103,7 +105,7 @@ module.exports = {
     if (interaction.isButton()) {
       const id = interaction.customId;
 
-      if ((id.startsWith('dash_') || id.startsWith('wizard_')) && !permissions.isAdmin(interaction.member, cfg)) {
+      if ((id.startsWith('dash_') || id.startsWith('wizard_') || id.startsWith('category_')) && !permissions.isAdmin(interaction.member, cfg)) {
         return interaction.reply({ content: '❌ لوحة المنتجات متاحة للإدارة فقط.', ephemeral: true });
       }
 
@@ -121,6 +123,9 @@ module.exports = {
         case 'dash_statistics':    return dashboardHandler.handleStatistics(interaction);
         case 'dash_payment_methods': return dashboardHandler.handlePaymentMethods(interaction);
         case 'dash_settings':      return dashboardHandler.handleSettings(interaction);
+        case 'dash_categories':    return categoryAdminHandler.open(interaction);
+        case 'category_add':       return categoryAdminHandler.add(interaction);
+        case 'category_refresh':   return categoryAdminHandler.refresh(interaction);
         case 'dash_back_to_list':  return dashboardHandler.handleBackToList(interaction);
 
         // ─── Dashboard: أزرار "التالي" بين خطوات Wizard إضافة منتج ───
@@ -130,6 +135,7 @@ module.exports = {
 
         // ─── Customer-facing: زر "تحت الصيانة" ───
         case 'payment_add': return paymentAdminHandler.openAdd(interaction);
+        case 'store_category_back': return storeFlow.handleCategoryBack(interaction);
         case 'product_maintenance_notice':
           return interaction.reply({ content: '🛠️ هذا المنتج تحت الصيانة حاليًا ولا يمكن شراؤه في الوقت الحالي.', ephemeral: true });
       }
@@ -183,6 +189,10 @@ module.exports = {
     // ─── Select Menus ─────────────────
     if (interaction.isStringSelectMenu()) {
       const id = interaction.customId;
+
+      if (id.startsWith('store_category_')) return storeFlow.handleCategorySelect(interaction);
+      if (id.startsWith('store_product_')) return storeFlow.handleProductSelect(interaction);
+      if (id.startsWith('store_back_')) return storeFlow.handleCategoryBack(interaction);
 
       switch (id) {
         // اختيار نوع التيكت من البانل نفسه (خارج أي تيكت)
