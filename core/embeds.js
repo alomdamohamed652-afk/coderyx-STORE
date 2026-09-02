@@ -136,6 +136,37 @@ module.exports = {
       .setDescription(`اختر التصنيف المناسب للوصول إلى المنتجات.${breadcrumb}\n\n${body}${productLines}`);
   },
 
+  storeCatalog(rootCategories = [], maxProductsPerCategory = 10) {
+    const registry = require('./registry');
+    const sections = [];
+
+    for (const rawPath of rootCategories.slice(0, 12)) {
+      const category = categories.getByPath(rawPath);
+      if (!category) continue;
+      const products = categories.getProducts(category.id);
+      const lines = products.slice(0, maxProductsPerCategory).map((p, i) => {
+        const minPrice = Math.min(...p.plans.map(pl => Number(pl.price) || 0));
+        const badge = registry.badgeLabel(p.badge);
+        return `**${i + 1}. ${p.name}**${badge ? ` ${badge}` : ''} — ${p.id}\\n> 💰 يبدأ من **${minPrice} ${p.plans[0]?.currency || ''}**`;
+      });
+
+      const childCount = categories.getChildren(category.path).length;
+      sections.push(
+        `### 📁 ${category.name}`,
+        `🆔 ${category.id} • ${products.length} منتج${childCount ? ` • ${childCount} فرع` : ''}`,
+        lines.length ? lines.join('\\n') : '> لا توجد منتجات مباشرة داخل هذا التصنيف.'
+      );
+    }
+
+    return base()
+      .setTitle('🛒 Codryx Store • كتالوج المنتجات')
+      .setDescription(
+        'تصفح المنتجات حسب التصنيف. استخدم القائمة لاختيار التصنيف أو المنتج، ويمكنك البحث مباشرة برقم المنتج.\\n\\n' +
+        (sections.join('\\n\\n') || 'لا توجد تصنيفات متاحة حاليًا.')
+      )
+      .setFooter({ text: `${B.footer} • عرض منظم` });
+  },
+
   // ───────────────────────────────────
   //   STORE: عرض المنتجات
   // ───────────────────────────────────
