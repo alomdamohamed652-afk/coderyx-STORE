@@ -60,6 +60,7 @@ module.exports = {
       if (id === 'ticket_member_add') return ticketHandler.handleMemberModal(interaction, 'add');
       if (id === 'ticket_member_remove') return ticketHandler.handleMemberModal(interaction, 'remove');
       if (id === 'ticket_rename_modal') return ticketHandler.handleRenameModal(interaction);
+      if (id === 'ticket_staff_transfer_modal') return ticketHandler.handleStaffTransferModal(interaction);
 
       if (id.startsWith('price_modal_'))    return orderInteractionHandler.handlePriceModalSubmit(interaction);
       if (id.startsWith('installment_modal_')) return orderInteractionHandler.handleInstallmentModalSubmit(interaction);
@@ -184,6 +185,7 @@ module.exports = {
         case 'payment_select': return paymentAdminHandler.select(interaction);
         case 'ticket_admin_menu': return ticketHandler.handleAdminMenu(interaction);
         case 'ticket_transfer_menu': return ticketHandler.transfer(interaction);
+        case 'ticket_status_menu': return ticketHandler.handleStatusSelect(interaction);
       }
 
       // قائمة تغيير حالة الأوردر (روم اللوج)
