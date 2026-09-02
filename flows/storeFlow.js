@@ -61,11 +61,12 @@ module.exports = {
       ? registry.getVisible().filter(p => !categoryRegistry.categoryIdForProduct(p))
       : registry.getVisible().filter(p => categoryRegistry.categoryIdForProduct(p) === categoryId);
 
+    const ticket = db.getTicket(interaction.channel.id);
     const rows = [];
     if (children.length) rows.push(components.categorySelect(children, categoryId));
     if (products.length) rows.push(components.productSelect(products, categoryId));
     rows.push(components.storeBackButton(category?.parentId || 'root'));
-    rows.push(components.ticketActions(false), components.ticketAdminButton());
+    rows.push(components.ticketActions(!!ticket?.claimedBy), components.ticketAdminButton());
 
     return interaction.update({
       embeds: [embeds.storeCategories(children, categoryId === '__uncategorized' ? null : categoryId, products)],
@@ -78,13 +79,14 @@ module.exports = {
     if (target === 'root') {
       const categories = categoryRegistry.getChildren(null);
       const products = registry.getVisible();
+      const ticket = db.getTicket(interaction.channel.id);
       const uncategorized = products.filter(p => !categoryRegistry.categoryIdForProduct(p));
       const root = [...categories];
       if (uncategorized.length) root.push({ id: '__uncategorized', name: 'غير مصنف', emoji: '📦', parentId: null, order: 999999 });
 
       return interaction.update({
         embeds: [embeds.storeCategories(root, null, uncategorized)],
-        components: [components.categorySelect(root, 'root'), components.ticketActions(false), components.ticketAdminButton()],
+        components: [components.categorySelect(root, 'root'), components.ticketActions(!!ticket?.claimedBy), components.ticketAdminButton()],
       });
     }
 
@@ -93,11 +95,12 @@ module.exports = {
 
     const children = categoryRegistry.getChildren(target);
     const products = registry.getVisible().filter(p => categoryRegistry.categoryIdForProduct(p) === target);
+    const ticket = db.getTicket(interaction.channel.id);
     const rows = [];
     if (children.length) rows.push(components.categorySelect(children, target));
     if (products.length) rows.push(components.productSelect(products, target));
     rows.push(components.storeBackButton(category.parentId || 'root'));
-    rows.push(components.ticketActions(false), components.ticketAdminButton());
+    rows.push(components.ticketActions(!!ticket?.claimedBy), components.ticketAdminButton());
 
     return interaction.update({
       embeds: [embeds.storeCategories(children, category.parentId, products, category.name, `المسار: **${categoryRegistry.getPath(target)}**`)],
