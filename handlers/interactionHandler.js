@@ -187,6 +187,7 @@ module.exports = {
       switch (id) {
         // اختيار نوع التيكت من البانل نفسه (خارج أي تيكت)
         case 'panel_ticket_type': return ticketHandler.createFromPanel(interaction);
+        case 'select_product_category': return storeFlow.handleCategorySelect(interaction);
         case 'select_product':    return storeFlow.handleProductSelect(interaction);
         case 'select_plan':       return storeFlow.handlePlanSelect(interaction);
 
