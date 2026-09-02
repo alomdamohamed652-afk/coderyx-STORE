@@ -156,19 +156,26 @@ module.exports = {
     let flowMessage = null;
     if (type === 'purchase') {
       const storeFlow = require('../flows/storeFlow');
-      flowMessage = await storeFlow.start({ channel, user, guild });
+      flowMessage = await storeFlow.start({ channel, user, guild }, [
+        components.ticketActions(false),
+        components.ticketAdminButton(),
+      ]);
     } else {
       const supportFlow = require('../flows/supportFlow');
       flowMessage = await supportFlow.start({ channel, user, guild }, type);
     }
 
-    // التحكم في التذكرة مستقل تمامًا عن اختيار المنتج.
-    // لذلك استلام التذكرة لا يحذف قائمة المنتجات، واختيار المنتج لا يلغي زر الاستلام.
-    const actionsMessage = await channel.send({
-      embeds: [embeds.info('🎫 إدارة التذكرة', 'استخدم الأزرار التالية لاستلام التذكرة أو طلب إغلاقها.')],
-      components: [components.ticketActions(false), components.ticketAdminButton()],
-    });
-    db.updateTicket(channel.id, { actionsMessageId: actionsMessage.id });
+    // تذاكر الشراء تحتوي على أدوات التذكرة داخل نفس رسالة المتجر،
+    // حتى لا يكون Claim واختيار المنتج مرتبطين برسالتين منفصلتين.
+    if (type === 'purchase') {
+      if (flowMessage?.id) db.updateTicket(channel.id, { actionsMessageId: flowMessage.id });
+    } else {
+      const actionsMessage = await channel.send({
+        embeds: [embeds.info('🎫 إدارة التذكرة', 'استخدم الأزرار التالية لاستلام التذكرة أو طلب إغلاقها.')],
+        components: [components.ticketActions(false), components.ticketAdminButton()],
+      });
+      db.updateTicket(channel.id, { actionsMessageId: actionsMessage.id });
+    }
     db.recordTicketEvent(channel.id, 'created', { byUserId: user.id, byUsername: user.username, details: { type } });
     await audit.log(interaction.client, { action: 'Ticket Created', actorId: user.id, ticket: db.getTicket(channel.id), details: { 'النوع': TYPE_LABELS[type] || type } });
     return flowMessage;
