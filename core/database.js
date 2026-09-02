@@ -197,6 +197,7 @@ class Database {
   saveFeedback({ orderId, customerId, username, rating, comment }) {
     const db = this._read();
     if (!db.feedback) db.feedback = {};
+    if (!db.teamFeedback) db.teamFeedback = {};
     const feedback = { orderId, customerId, username, rating, comment, createdAt: new Date().toISOString() };
     db.feedback[orderId] = feedback;
     this._write(db);
@@ -205,6 +206,34 @@ class Database {
 
   getFeedback(orderId) { return (this._read().feedback ?? {})[orderId] ?? null; }
   getAllFeedback() { return Object.values(this._read().feedback ?? {}); }
+
+  saveTeamFeedback({ ticketId, customerId, customerUsername, category, rating, staffId = null, staffUsername = null, teamName = null }) {
+    const db = this._read();
+    if (!db.teamFeedback) db.teamFeedback = {};
+    const key = `${ticketId}:${category}`;
+    const feedback = {
+      ticketId,
+      customerId,
+      customerUsername,
+      category,
+      rating: Number(rating),
+      staffId,
+      staffUsername,
+      teamName,
+      createdAt: new Date().toISOString(),
+    };
+    db.teamFeedback[key] = feedback;
+    this._write(db);
+    return feedback;
+  }
+
+  getTeamFeedback(ticketId, category) {
+    return (this._read().teamFeedback ?? {})[`${ticketId}:${category}`] ?? null;
+  }
+
+  getAllTeamFeedback() {
+    return Object.values(this._read().teamFeedback ?? {});
+  }
 
   savePanelMessage(channelId, messageId) {
     const db = this._read();
