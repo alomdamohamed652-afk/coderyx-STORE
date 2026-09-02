@@ -3,6 +3,7 @@
 const { EmbedBuilder } = require('discord.js');
 const cfg      = require('../config');
 const registry = require('./registry');
+const categories = require('./categoryRegistry');
 
 // ─────────────────────────────────────────
 //   Dashboard Embeds
@@ -49,6 +50,20 @@ module.exports = {
         { name: '⭐ متوسط تقييم الفريق', value: analytics.ratingAverage ? analytics.ratingAverage.toFixed(2) + '/5' : '—', inline: true },
       )
       .setFooter({ text: `${B.footer} • آخر تحديث` });
+  },
+
+  categories() {
+    const lines = categories.treeLines();
+    return base()
+      .setTitle('🗂️ إدارة تصنيفات المنتجات')
+      .setDescription(
+        'التصنيفات تدعم مستويات متداخلة، مثل: **FiveM > Systems > Management**.\\n\\n' +
+        lines.join('\\n')
+      )
+      .addFields({
+        name: '💡 طريقة الاستخدام',
+        value: 'أضف تصنيفًا من زر **إضافة تصنيف**، ثم افتح أي منتج واضغط **🗂️ الفئة** لتحديد مساره.'
+      });
   },
 
   // ───────────────────────────────────
