@@ -140,6 +140,44 @@ class ProductRegistry {
     return this.getAll().filter(p => p.visibility === 'visible');
   }
 
+  /**
+   * فئات المنتجات الظاهرة.
+   * كل منتج بدون category يذهب تلقائيًا إلى "عام".
+   */
+  getCategories(products = this.getVisible()) {
+    const map = new Map();
+
+    for (const product of products) {
+      const name = String(product.category || 'عام').trim() || 'عام';
+      const id = name
+        .toLowerCase()
+        .replace(/\\s+/g, '-')
+        .replace(/[^a-z0-9\\u0600-\\u06ff_-]/gi, '')
+        .slice(0, 90) || 'general';
+
+      if (!map.has(id)) {
+        map.set(id, {
+          id,
+          name,
+          emoji: product.categoryEmoji || '📁',
+          description: `تصفح منتجات فئة ${name}`,
+        });
+      }
+    }
+
+    return [...map.values()];
+  }
+
+  getProductsByCategory(categoryId, products = this.getVisible()) {
+    const categories = this.getCategories(products);
+    const category = categories.find(c => c.id === categoryId);
+    if (!category) return [];
+    return products.filter(p => {
+      const name = String(p.category || 'عام').trim() || 'عام';
+      return this.getCategories([p])[0]?.id === category.id;
+    });
+  }
+
   getById(id) {
     return this.products.get(id) ?? null;
   }
