@@ -56,6 +56,9 @@ module.exports = {
 
       if (id === 'payment_modal_add') return paymentAdminHandler.submitAdd(interaction);
       if (id.startsWith('payment_modal_edit_')) return paymentAdminHandler.submitEdit(interaction);
+      if (id === 'ticket_member_add') return ticketHandler.handleMemberModal(interaction, 'add');
+      if (id === 'ticket_member_remove') return ticketHandler.handleMemberModal(interaction, 'remove');
+      if (id === 'ticket_rename_modal') return ticketHandler.handleRenameModal(interaction);
 
       if (id.startsWith('price_modal_'))    return orderInteractionHandler.handlePriceModalSubmit(interaction);
       if (id.startsWith('installment_modal_')) return orderInteractionHandler.handleInstallmentModalSubmit(interaction);
@@ -94,6 +97,7 @@ module.exports = {
 
       switch (id) {
         case 'claim_ticket':    return ticketHandler.claim(interaction);
+        case 'ticket_admin_open': return ticketHandler.openAdmin(interaction);
         case 'request_close':   return ticketHandler.requestClose(interaction);
         case 'confirm_close':   return ticketHandler.confirmClose(interaction);
         case 'cancel_close':    return ticketHandler.cancelClose(interaction);
@@ -173,6 +177,8 @@ module.exports = {
         // ─── Dashboard: اختيار منتج للتعديل ───
         case 'dash_select_product': return dashboardHandler.handleProductSelected(interaction);
         case 'payment_select': return paymentAdminHandler.select(interaction);
+        case 'ticket_admin_menu': return ticketHandler.handleAdminMenu(interaction);
+        case 'ticket_transfer_menu': return ticketHandler.transfer(interaction);
       }
 
       // قائمة تغيير حالة الأوردر (روم اللوج)
