@@ -57,8 +57,8 @@ module.exports = {
     return base()
       .setTitle('🗂️ إدارة تصنيفات المنتجات')
       .setDescription(
-        'التصنيفات تدعم مستويات متداخلة، مثل: **FiveM > Systems > Management**.\\n\\n' +
-        lines.join('\\n')
+        'التصنيفات تدعم مستويات متداخلة، مثل: **FiveM > Systems > Management**.\n\n' +
+        lines.join('\n')
       )
       .addFields({
         name: '💡 طريقة الاستخدام',
