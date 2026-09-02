@@ -422,7 +422,7 @@ module.exports = {
       staffUsername = await resolveUserName(interaction.client.guilds.cache.get(ticket.guildId) || null, ticket.claimedBy, ticket.claimedUsername || 'غير معروف');
     }
 
-    const guild = interaction.client.guilds.cache.find(g => g.id === ticket.guildId);
+    const guild = interaction.client.guilds.cache.get(cfg.guildId);
     if (guild && !staffUsername && ticket.claimedUsername) staffUsername = ticket.claimedUsername;
 
     const feedback = db.saveTeamFeedback({
