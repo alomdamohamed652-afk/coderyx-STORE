@@ -87,7 +87,7 @@ module.exports = {
     const t = types[type] ?? { emoji: '📩', label: 'طلب', color: B.color, desc: '' };
 
     const embed = base(t.color)
-      .setAuthor({ name: B.name, iconURL: this._safeImage(B.logo) || undefined })
+      .setAuthor({ name: B.name })
       .setTitle(`${t.emoji} تذكرة ${t.label}`)
       .setDescription(
         `أهلًا ${user} 👋\n\n` +
