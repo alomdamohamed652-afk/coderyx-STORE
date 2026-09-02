@@ -154,6 +154,7 @@ client.once('clientReady', async () => {
       { label: 'CLOSE_ROLE_IDS',   ids: cfg.roles.close },
       { label: 'FINANCE_ROLE_IDS', ids: cfg.roles.finance },
       { label: 'DASHBOARD_ROLE_IDS', ids: cfg.roles.dashboard },
+      { label: 'TEAM_LEADER_ROLE_IDS', ids: cfg.roles.teamLeader },
     ];
 
     const channelChecks = [
@@ -165,6 +166,7 @@ client.once('clientReady', async () => {
       { label: 'FEEDBACK_CHANNEL_ID',     id: cfg.channels.feedbackChannel },
       { label: 'TRANSCRIPT_LOG_CHANNEL_ID', id: cfg.channels.transcriptLog },
       { label: 'DASHBOARD_LOG_CHANNEL_ID', id: cfg.channels.dashboardLog },
+      { label: 'AUDIT_LOG_CHANNEL_ID', id: cfg.channels.auditLog },
     ];
 
     const brokenRoles = [];
