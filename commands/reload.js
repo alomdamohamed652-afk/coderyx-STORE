@@ -9,7 +9,7 @@ module.exports = {
   data: new SlashCommandBuilder()
     .setName('reload')
     .setDescription('إعادة تحميل جميع المنتجات بدون إعادة تشغيل البوت')
-    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
+    .setDefaultMemberPermissions(null),
 
   async execute(interaction) {
     if (!permissions.isOwner(interaction.member, cfg)) {
