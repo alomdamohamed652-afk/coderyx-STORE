@@ -61,6 +61,9 @@ module.exports = {
         return interaction.reply({ content: '❌ لوحة المنتجات متاحة للإدارة فقط.', ephemeral: true });
       }
 
+      if (id === 'dash_modal_category_add') return dashboardHandler.handleCategoryAddModal(interaction);
+      if (id.startsWith('dash_modal_category_')) return productEditHandler.handleCategoryModalSubmit(interaction);
+
       if (id === 'payment_modal_add') return paymentAdminHandler.submitAdd(interaction);
       if (id.startsWith('payment_modal_edit_')) return paymentAdminHandler.submitEdit(interaction);
       if (id === 'ticket_member_add') return ticketHandler.handleMemberModal(interaction, 'add');
@@ -120,7 +123,9 @@ module.exports = {
         case 'dash_view_products': return dashboardHandler.handleViewProducts(interaction);
         case 'dash_statistics':    return dashboardHandler.handleStatistics(interaction);
         case 'dash_payment_methods': return dashboardHandler.handlePaymentMethods(interaction);
-        case 'dash_settings':      return dashboardHandler.handleSettings(interaction);
+        case 'dash_categories':     return dashboardHandler.handleCategories(interaction);
+        case 'dash_category_add':   return interaction.showModal(require('../core/dashboardComponents').categoryAdminModal());
+        case 'dash_settings':       return dashboardHandler.handleSettings(interaction);
         case 'dash_back_to_list':  return dashboardHandler.handleBackToList(interaction);
 
         // ─── Dashboard: أزرار "التالي" بين خطوات Wizard إضافة منتج ───
@@ -137,6 +142,7 @@ module.exports = {
       // ─── Dashboard: أزرار لوحة منتج واحد (ديناميكية بـ productId) ───
       if (id.startsWith('dash_p_avail_'))    return productEditHandler.toggleAvailability(interaction);
       if (id.startsWith('dash_p_vis_'))      return productEditHandler.toggleVisibility(interaction);
+      if (id.startsWith('dash_p_category_')) return productEditHandler.openCategoryModal(interaction);
       if (id.startsWith('dash_p_badge_'))    return productEditHandler.openBadgeSelect(interaction);
       if (id.startsWith('dash_p_name_'))     return productEditHandler.openTextModal(interaction, 'name');
       if (id.startsWith('dash_p_desc_'))     return productEditHandler.openTextModal(interaction, 'desc');
