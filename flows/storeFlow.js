@@ -27,10 +27,58 @@ module.exports = {
       });
     }
 
+    const ticket = db.getTicket(interaction.channel.id);
     return interaction.channel.send({
       embeds:     [embeds.store(products)],
-      components: [components.productSelect(products), ...extraComponents],
+      components: this.buildTicketComponents(ticket, extraComponents),
     });
+  },
+
+  // يبني مكونات تذكرة الشراء مع الحفاظ على Claim / Close / Admin
+  // سواء اختار العميل فئة أو منتجًا.
+  buildTicketComponents(ticket, extraComponents = []) {
+    const products = registry.getVisible();
+    const categories = registry.getCategories(products);
+    const hasProduct = !!ticket?.selectedProduct;
+    const category = ticket?.selectedCategory;
+    const rows = [];
+
+    if (!category) {
+      rows.push(components.productCategorySelect(categories, false));
+    } else {
+      const categoryProducts = registry.getProductsByCategory(category, products);
+      rows.push(components.productCategorySelect(categories, hasProduct));
+      rows.push(components.productSelect(categoryProducts, hasProduct));
+    }
+
+    rows.push(components.ticketActions(!!ticket?.claimedBy));
+    rows.push(components.ticketAdminButton());
+    rows.push(...extraComponents);
+    return rows.slice(0, 5);
+  },
+
+  // ─── Step 1.5: اختيار فئة المنتج ─────
+  async handleCategorySelect(interaction) {
+    await interaction.deferUpdate();
+
+    const categoryId = interaction.values[0];
+    const products = registry.getVisible();
+    const categoryProducts = registry.getProductsByCategory(categoryId, products);
+
+    if (!categoryProducts.length) {
+      return interaction.followUp({ content: '❌ لا توجد منتجات متاحة داخل هذه الفئة حاليًا.', ephemeral: true });
+    }
+
+    db.updateTicket(interaction.channel.id, {
+      selectedCategory: categoryId,
+      selectedProduct: null,
+      selectedPlanIndex: null,
+    });
+
+    const ticket = db.getTicket(interaction.channel.id);
+    await interaction.message.edit({
+      components: this.buildTicketComponents(ticket),
+    }).catch(() => {});
   },
 
   // ─── Step 2: اختيار المنتج ──────────
@@ -48,19 +96,25 @@ module.exports = {
     }
 
     const productId = interaction.values[0];
+    if (productId === 'empty') {
+      return interaction.followUp({ content: '❌ لا توجد منتجات متاحة في هذه الفئة.', ephemeral: true });
+    }
     const product   = registry.getById(productId);
 
     if (!product) {
       return interaction.channel.send({ embeds: [embeds.error('المنتج غير موجود.')] });
     }
 
-    db.updateTicket(interaction.channel.id, { selectedProduct: productId });
+    db.updateTicket(interaction.channel.id, {
+      selectedProduct: productId,
+      selectedCategory: registry.getCategories([product])[0]?.id || ticket.selectedCategory || 'general',
+    });
 
-    // تعطيل قائمة المنتجات بعد الاختيار
-    const products = registry.getVisible();
-    const disabledMenu = components.productSelect(products);
-    disabledMenu.components[0].setDisabled(true);
-    await interaction.message.edit({ components: [disabledMenu] }).catch(() => {});
+    // عطّل اختيار الفئة/المنتج فقط؛ أزرار الاستلام والإدارة تظل متاحة.
+    const updatedTicket = db.getTicket(interaction.channel.id);
+    await interaction.message.edit({
+      components: this.buildTicketComponents(updatedTicket),
+    }).catch(() => {});
 
     // المنتج تحت الصيانة → نعرض التفاصيل لكن بدون إمكانية شراء فعلية
     if (product.availability === 'maintenance') {
