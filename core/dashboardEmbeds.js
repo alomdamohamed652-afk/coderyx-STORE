@@ -81,29 +81,34 @@ module.exports = {
 
   productDashboard(product) {
     const badge = registry.badgeLabel(product.badge);
-    const statusLine = `${product.availability === 'active' ? '🟢 متاح' : '🛠️ تحت الصيانة'} • ${product.visibility === 'visible' ? '👁️ ظاهر' : '👁️‍🗨️ مخفي'}`;
+    const isActive = product.availability === 'active';
+    const isVisible = product.visibility === 'visible';
+    const statusLine = `${isActive ? '🟢 متاح' : '🛠️ تحت الصيانة'}  •  ${isVisible ? '👁️ ظاهر للعملاء' : '🔒 مخفي عن العملاء'}`;
 
     const db = require('./database');
     const raw = db._read();
     const productOrders = Object.values(raw.orders ?? {}).filter(o => o.product?.id === product.id);
+    const paidOrders = productOrders.filter(o => o.payment?.paid);
+    const sales = paidOrders.reduce((sum, o) => sum + Number(o.payment?.finalPrice || 0), 0);
 
-    const minPrice = Math.min(...product.plans.map(p => p.price));
-    const planSummary = product.plans.map(p => `${p.name}: ${p.price} ${p.currency}`).join(' | ');
+    const prices = product.plans.map(p => Number(p.price)).filter(Number.isFinite);
+    const minPrice = prices.length ? Math.min(...prices) : 0;
+    const planSummary = product.plans.map((p, i) => `**${i + 1}. ${p.name}** — ${money(p.price, p.currency)}`).join('\n');
 
     const embed = new EmbedBuilder()
       .setColor(product.color ?? B.color)
-      .setTitle(`📦 ${product.name}${badge ? ` ${badge}` : ''}`)
-      .setDescription(`> ${product.description}\n\n${statusLine}`)
+      .setTitle(`📦 ${product.name}${badge ? ` • ${badge}` : ''}`)
+      .setDescription(`> ${product.description || 'بدون وصف'}\n\n**الحالة**  ${statusLine}`)
       .addFields(
-        { name: '🏷️ الفئة', value: product.category ?? '—', inline: true },
-        { name: '🔖 الإصدار', value: product.version ?? '—', inline: true },
         { name: '💰 يبدأ من', value: money(minPrice, product.plans[0]?.currency ?? ''), inline: true },
-        { name: '📋 الخطط', value: planSummary || '—' },
-        { name: '🧾 عدد الطلبات', value: number(productOrders.length), inline: true },
-        { name: '🔢 الترتيب', value: number(product.order + 1), inline: true },
-        { name: '🕐 آخر تحديث', value: `<t:${Math.floor(new Date(product.updatedAt).getTime() / 1000)}:R>`, inline: true },
+        { name: '📦 الباقات', value: number(product.plans.length), inline: true },
+        { name: '🧾 الطلبات', value: number(productOrders.length), inline: true },
+        { name: '💳 مبيعات مدفوعة', value: money(sales), inline: true },
+        { name: '🔖 الإصدار', value: product.version ?? '—', inline: true },
+        { name: '🔢 الترتيب', value: number(Number(product.order || 0) + 1), inline: true },
+        { name: '📋 تفاصيل الباقات', value: planSummary || 'لا توجد باقات.' },
       )
-      .setFooter({ text: `${B.footer} • ${product.id}` })
+      .setFooter({ text: `${B.footer} • ${product.id} • لوحة الإدارة` })
       .setTimestamp();
 
     if (product.thumbnail) embed.setThumbnail(product.thumbnail);
