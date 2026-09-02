@@ -32,15 +32,16 @@ module.exports = {
     const controls = extraComponents.length
       ? extraComponents
       : [components.ticketActions(!!ticket?.claimedBy), components.ticketAdminButton()];
+    const displayMode = categories.getDisplayMode();
+    const generalProducts = displayMode === 'grouped' ? categories.getGeneralProducts() : [];
 
     if (roots.length > 0) {
+      const rows = [components.categorySelect(roots)];
+      if (generalProducts.length) rows.push(components.productSelect(generalProducts));
+      rows.push(components.storeProductSearchButton(), ...controls);
       return interaction.channel.send({
-        embeds: [embeds.storeCategories(roots, [])],
-        components: [
-          components.categorySelect(roots),
-          components.storeProductSearchButton(),
-          ...controls,
-        ].slice(0, 5),
+        embeds: [embeds.storeCategories(roots, [], generalProducts)],
+        components: rows.slice(0, 5),
       });
     }
 
@@ -78,7 +79,8 @@ module.exports = {
 
     const rows = [];
     if (children.length) rows.push(components.categorySelect(children));
-    if (products.length) rows.push(components.productSelect(products));
+    const showProducts = categories.getDisplayMode() === 'grouped' || children.length === 0;
+    if (products.length && showProducts) rows.push(components.productSelect(products));
     rows.push(components.storeCategoryNavigationButtons(true));
     return interaction.editReply({
       embeds: [embeds.storeCategories(children, child, products)],
@@ -100,7 +102,8 @@ module.exports = {
     const products = categories.getProducts(parent);
     const rows = [];
     if (children.length) rows.push(components.categorySelect(children));
-    if (products.length) rows.push(components.productSelect(products));
+    const showProducts = categories.getDisplayMode() === 'grouped' || children.length === 0;
+    if (products.length && showProducts) rows.push(components.productSelect(products));
     rows.push(components.storeCategoryNavigationButtons(parent.length > 0));
 
     return interaction.editReply({
