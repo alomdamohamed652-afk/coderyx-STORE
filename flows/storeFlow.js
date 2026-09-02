@@ -57,7 +57,7 @@ module.exports = {
     const ticket = db.getTicket(interaction.channel.id);
     const currentPath = Array.isArray(ticket?.selectedCategoryPath) ? ticket.selectedCategoryPath : [];
     const selected = interaction.values[0];
-    const child = categories.getChildren(currentPath).find(p => p.at(-1) === selected);
+    const child = categories.getChildren(currentPath).find(p => p.join(' › ') === selected);
 
     if (!child) {
       return interaction.editReply({ embeds: [embeds.error('التصنيف غير موجود.')], components: [] }).catch(() => {});
@@ -163,9 +163,9 @@ module.exports = {
     const raw = interaction.fields.getTextInputValue('product_number').trim();
     const product = registry.findByNumber(raw);
 
-    if (!product) {
+    if (!product || product.visibility !== 'visible') {
       return interaction.reply({
-        embeds: [embeds.error(`❌ لم يتم العثور على منتج بالرقم أو الـID: **${raw}**`)],
+        embeds: [embeds.error(`❌ لم يتم العثور على منتج متاح بالرقم أو الـID: **${raw}**`)],
         ephemeral: true,
       });
     }
