@@ -174,10 +174,7 @@ module.exports = {
     const disabledMenu = components.productSelect([product]);
     disabledMenu.components[0].setDisabled(true);
 
-    const selectorRows = [
-      disabledMenu,
-      ...(selectedPath.length ? [components.categoryBackButton()] : []),
-    ];
+    const selectorRows = [disabledMenu];
     await interaction.message.edit({
       components: this.buildPurchaseComponents(updatedTicket, selectorRows),
     }).catch(() => {});
