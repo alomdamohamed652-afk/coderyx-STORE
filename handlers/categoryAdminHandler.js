@@ -19,11 +19,11 @@ function view() {
     .setColor(cfg.branding.color)
     .setTitle('📁 إدارة فئات المنتجات')
     .setDescription(lines.length
-      ? 'الفئات الحالية (يمكنك إنشاء فئة داخل فئة):\\n\\n' + lines.join('\\n')
+      ? 'الفئات الحالية (يمكنك إنشاء فئة داخل فئة):\n\n' + lines.join('\n')
       : 'لا توجد فئات حتى الآن. ابدأ بإنشاء أول فئة.')
     .addFields({
       name: '💡 مثال',
-      value: 'FiveM → Police → Emergency Systems\\nويمكنك وضع المنتجات داخل أي مستوى.',
+      value: 'FiveM → Police → Emergency Systems\nويمكنك وضع المنتجات داخل أي مستوى.',
     })
     .setFooter({ text: cfg.branding.footer })
     .setTimestamp();
