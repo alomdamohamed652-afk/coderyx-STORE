@@ -36,7 +36,7 @@ module.exports = {
     if (roots.length > 0) {
       return interaction.channel.send({
         embeds: [embeds.storeCategories(roots, [])],
-        components: this.buildPurchaseComponents(updatedTicket, [components.categorySelect(roots)]),
+        components: this.buildPurchaseComponents(ticket, [components.categorySelect(roots)]),
       });
     }
 
@@ -66,7 +66,7 @@ module.exports = {
     if (children.length > 0) {
       return interaction.editReply({
         embeds: [embeds.storeCategories(children, child)],
-        components: this.buildPurchaseComponents(ticket, [
+        components: this.buildPurchaseComponents(updatedTicket, [
           components.categorySelect(children),
           components.categoryBackButton(),
         ]),
@@ -77,17 +77,50 @@ module.exports = {
     if (products.length === 0) {
       return interaction.editReply({
         embeds: [embeds.info('لا توجد منتجات', 'لا توجد منتجات متاحة داخل هذا التصنيف حاليًا.')],
-        components: this.buildPurchaseComponents(ticket, [components.categoryBackButton()]),
+        components: this.buildPurchaseComponents(updatedTicket, [components.categoryBackButton()]),
       });
     }
 
     return interaction.editReply({
       embeds: [embeds.store(products, child)],
-      components: this.buildPurchaseComponents(ticket, [
+      components: this.buildPurchaseComponents(updatedTicket, [
         components.productSelect(products),
         components.categoryBackButton(),
       ]),
     });
+  },
+
+  buildPurchaseComponentsForTicket(ticket) {
+    const path = Array.isArray(ticket?.selectedCategoryPath) ? ticket.selectedCategoryPath : [];
+    const roots = categories.getRootCategories();
+
+    if (ticket?.selectedProduct) {
+      const product = registry.getById(ticket.selectedProduct);
+      const selectorRows = product
+        ? [components.productSelect([product])]
+        : [components.categorySelect(roots)];
+      if (product) selectorRows[0].components[0].setDisabled(true);
+      if (path.length) selectorRows.push(components.categoryBackButton());
+      return this.buildPurchaseComponents(ticket, selectorRows);
+    }
+
+    if (!path.length) {
+      return this.buildPurchaseComponents(ticket, [components.categorySelect(roots)]);
+    }
+
+    const children = categories.getChildren(path);
+    if (children.length) {
+      return this.buildPurchaseComponents(ticket, [
+        components.categorySelect(children),
+        components.categoryBackButton(),
+      ]);
+    }
+
+    const products = categories.getProducts(path);
+    return this.buildPurchaseComponents(ticket, [
+      components.productSelect(products),
+      components.categoryBackButton(),
+    ]);
   },
 
   async handleCategoryBack(interaction) {
