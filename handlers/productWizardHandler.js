@@ -56,9 +56,6 @@ module.exports = {
     const descInput = new TextInputBuilder()
       .setCustomId('description').setLabel('الوصف').setStyle(TextInputStyle.Paragraph).setRequired(true);
 
-    const categoryInput = new TextInputBuilder()
-      .setCustomId('category').setLabel('مسار التصنيف (استخدم > للفروع)').setStyle(TextInputStyle.Short).setRequired(false)
-      .setPlaceholder('مثال: FiveM / RP');
 
     const versionInput = new TextInputBuilder()
       .setCustomId('version').setLabel('رقم الإصدار').setStyle(TextInputStyle.Short).setRequired(false)
@@ -68,7 +65,6 @@ module.exports = {
       new ActionRowBuilder().addComponents(idInput),
       new ActionRowBuilder().addComponents(nameInput),
       new ActionRowBuilder().addComponents(descInput),
-      new ActionRowBuilder().addComponents(categoryInput),
       new ActionRowBuilder().addComponents(versionInput),
     );
 
@@ -81,9 +77,6 @@ module.exports = {
     const id = interaction.fields.getTextInputValue('id').trim().toLowerCase().replace(/\s+/g, '-');
     const name = interaction.fields.getTextInputValue('name').trim();
     const description = interaction.fields.getTextInputValue('description').trim();
-    const categoryRaw = interaction.fields.getTextInputValue('category').trim();
-    const categoryPath = categories.normalize(categoryRaw);
-    const category = categoryPath.length ? categoryPath.join(' > ') : 'عام';
     const version = interaction.fields.getTextInputValue('version').trim() || '1.0.0';
 
     if (!/^[a-z0-9-]+$/.test(id)) {
@@ -95,15 +88,43 @@ module.exports = {
     }
 
     const session = getSession(interaction.user.id);
-    session.data = { id, name, description, category, categoryPath: categoryPath.length ? categoryPath : ['عام'], version };
+    session.data = { id, name, description, category: 'عام', categoryPath: ['عام'], categoryId: null, version };
 
     await interaction.reply({
-      content: `✅ تم حفظ الخطوة 1 (${name}). اضغط للمتابعة للخطوة 2 (اللون والصور والمميزات):`,
-      components: [nextButton('wizard_open_step2')],
+      content: `✅ تم حفظ الخطوة 1 (**${name}**). اختر تصنيف المنتج من القائمة، ثم اضغط **التالي**.\n\n🆔 Product ID: \`${id}\``,
+      components: [
+        dashComponents.wizardCategorySelect(categories.getAllCategories()),
+        nextButton('wizard_open_step2', '➡️ الخطوة 2'),
+      ],
       ephemeral: true,
     });
   },
 
+  async handleCategorySelected(interaction) {
+    const session = getSession(interaction.user.id);
+    if (!session.data.id) return interaction.reply({ content: '❌ انتهت جلسة إضافة المنتج.', ephemeral: true });
+
+    const value = interaction.values[0];
+    if (value === 'none') {
+      session.data.categoryId = null;
+      session.data.categoryPath = ['عام'];
+      session.data.category = 'عام';
+    } else {
+      const category = categories.getById(value);
+      if (!category) return interaction.reply({ content: '❌ التصنيف غير موجود.', ephemeral: true });
+      session.data.categoryId = category.id;
+      session.data.categoryPath = category.path;
+      session.data.category = category.pathKey;
+    }
+
+    return interaction.update({
+      content: `✅ تم تحديد التصنيف: **${session.data.category}**\n\nيمكنك الآن متابعة إنشاء المنتج.`,
+      components: [
+        dashComponents.wizardCategorySelect(categories.getAllCategories()),
+        nextButton('wizard_open_step2', '➡️ الخطوة 2'),
+      ],
+    });
+  },
   // ─── زر "التالي" بعد الخطوة 1 → يفتح Modal الخطوة 2 ───
 
   async openStep2(interaction) {
@@ -226,7 +247,7 @@ module.exports = {
     };
 
     try {
-      categories.ensurePath(session.data.categoryPath);
+      if (session.data.categoryId) categories.ensurePath(session.data.categoryPath);
       const created = registry.create(productData);
       sessions.delete(interaction.user.id);
 
