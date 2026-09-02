@@ -64,7 +64,6 @@ module.exports = {
       if (id.startsWith('price_modal_'))    return orderInteractionHandler.handlePriceModalSubmit(interaction);
       if (id.startsWith('installment_modal_')) return orderInteractionHandler.handleInstallmentModalSubmit(interaction);
       if (id.startsWith('feedback_modal_')) return orderInteractionHandler.handleFeedbackModalSubmit(interaction);
-      if (id.startsWith('team_feedback_')) return transcriptHandler.handleTeamRating(interaction);
 
       // ─── Dashboard: Wizard إضافة منتج (3 خطوات متتالية) ───
       if (id === 'wizard_step1') return productWizardHandler.handleStep1(interaction);
@@ -163,6 +162,10 @@ module.exports = {
       if (feedbackMatch) {
         const rating = parseInt(feedbackMatch[1], 10);
         return orderInteractionHandler.handleFeedbackStarClick(interaction, rating);
+      }
+
+      if (id.startsWith('teamrate|')) {
+        return transcriptHandler.handleTeamRating(interaction);
       }
     }
 
