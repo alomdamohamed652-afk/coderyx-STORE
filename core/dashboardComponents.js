@@ -74,6 +74,7 @@ module.exports = {
         new ButtonBuilder().setCustomId(`dash_p_avail_${product.id}`).setLabel(availToggleLabel).setStyle(availToggleStyle),
         new ButtonBuilder().setCustomId(`dash_p_vis_${product.id}`).setLabel(visToggleLabel).setStyle(visToggleStyle),
         new ButtonBuilder().setCustomId(`dash_p_badge_${product.id}`).setLabel('🏷️ Badge').setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId(`dash_p_category_${product.id}`).setLabel('📁 الفئة').setStyle(ButtonStyle.Secondary),
         new ButtonBuilder().setCustomId(`dash_p_version_${product.id}`).setLabel('🔄 الإصدار').setStyle(ButtonStyle.Primary),
       ),
       new ActionRowBuilder().addComponents(
@@ -131,6 +132,23 @@ module.exports = {
       .setStyle(style)
       .setRequired(true)
       .setValue(String(currentValue ?? ''));
+
+    modal.addComponents(new ActionRowBuilder().addComponents(input));
+    return modal;
+  },
+
+  categoryEditModal(productId, product) {
+    const modal = new ModalBuilder()
+      .setCustomId(`dash_modal_category_${productId}`)
+      .setTitle('تغيير فئة المنتج');
+
+    const input = new TextInputBuilder()
+      .setCustomId('category_path')
+      .setLabel('مسار الفئة')
+      .setStyle(TextInputStyle.Short)
+      .setRequired(false)
+      .setValue(product.category || '')
+      .setPlaceholder('مثال: FiveM / Police / Emergency');
 
     modal.addComponents(new ActionRowBuilder().addComponents(input));
     return modal;
