@@ -426,19 +426,26 @@ module.exports = {
     try {
       filePath = await this.buildTranscript(channel, meta);
 
-      const logChannel = await channel.client.channels.fetch(cfg.channels.transcriptLog);
       const ticketType = normalizeTypeKey(meta.typeKey || meta.type);
-      const teamName = meta.teamRoleName || getTeamRoleNames(channel.guild, ticketType).join(' • ') || getTeamLabel(ticketType);
+      const teamName = meta.teamRoleName ||
+        getTeamRoleNames(channel.guild, ticketType).join(' • ') ||
+        getTeamLabel(ticketType);
+
       const staffName = meta.claimedBy
         ? await resolveUserName(channel.guild, meta.claimedBy, meta.claimedByUsername || 'غير معروف')
         : null;
 
-      await logChannel.send({
-        content:
-          `📜 **لوق تذكرة مغلقة:** `#${meta.channelName ?? channel.name}`\\n` +
-          `**النوع:** ${meta.type ?? '—'} | **صاحبها:** ${meta.openedByUsername || '—'} | **الفريق:** ${teamName}`,
-        files: [{ attachment: filePath, name: `transcript-${channel.name}.html` }],
-      });
+      if (cfg.channels.transcriptLog) {
+        const logChannel = await channel.client.channels.fetch(cfg.channels.transcriptLog);
+        await logChannel.send({
+          content:
+            '📜 **لوق تذكرة مغلقة:** \`#' + (meta.channelName ?? channel.name) + '\`\\n' +
+            '**النوع:** ' + (meta.type ?? '—') +
+            ' | **صاحبها:** ' + (meta.openedByUsername || '—') +
+            ' | **الفريق:** ' + teamName,
+          files: [{ attachment: filePath, name: 'transcript-' + channel.name + '.html' }],
+        });
+      }
 
       // يرسل تقييم الفريق في الخاص للعميل بعد إغلاق التذكرة.
       await sendTeamFeedbackRequest(channel, meta, teamName, staffName);
