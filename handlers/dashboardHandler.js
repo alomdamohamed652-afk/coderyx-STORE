@@ -6,6 +6,7 @@ const permissions     = require('../core/permissions');
 const cfg             = require('../config');
 const dashEmbeds      = require('../core/dashboardEmbeds');
 const dashComponents  = require('../core/dashboardComponents');
+const categories       = require('../core/categoryRegistry');
 
 // ─────────────────────────────────────────
 //   Dashboard Handler
@@ -122,6 +123,28 @@ module.exports = {
 
     await interaction.reply({
       embeds: [dashEmbeds.statistics()],
+      ephemeral: true,
+    });
+  },
+
+  async handleCategoryAddModal(interaction) {
+    if (!this.checkAccess(interaction)) return;
+    const raw = interaction.fields.getTextInputValue('category_path').trim();
+    const path = categories.normalize(raw);
+    if (!path.length) return interaction.reply({ content: '❌ مسار التصنيف غير صحيح.', ephemeral: true });
+
+    categories.ensurePath(path);
+    const dashboardLogHandler = require('./dashboardLogHandler');
+    await dashboardLogHandler.log(interaction.client, {
+      actor: interaction.user,
+      action: 'create_category',
+      before: '—',
+      after: path.join(' > '),
+    });
+
+    return interaction.reply({
+      embeds: [dashEmbeds.categories()],
+      content: `✅ تم إنشاء/تأكيد التصنيف: **${path.join(' > ')}**`,
       ephemeral: true,
     });
   },
