@@ -167,11 +167,15 @@ module.exports = {
     if (!installment?.enabled) return interaction.reply({ content: '❌ هذا الأوردر ليس بنظام التقسيط.', ephemeral: true });
     if (!Number.isFinite(amount) || amount <= 0) return interaction.reply({ content: '❌ قيمة القسط غير صحيحة.', ephemeral: true });
     if ((installment.paidCount || 0) >= installment.count) return interaction.reply({ content: '✅ تم تسجيل جميع الأقساط بالفعل.', ephemeral: true });
+    const remaining = Math.max(0, Number(order.payment?.finalPrice || 0) - Number(installment.paidTotal || order.payment?.installmentPaidTotal || 0));
+    if (amount > remaining && remaining > 0) return interaction.reply({ content: `❌ المبلغ أكبر من المتبقي (${remaining}).`, ephemeral: true });
 
     await interaction.deferReply({ ephemeral: true });
     const updated = db.recordInstallmentPayment(orderId, { amount, byUserId: interaction.user.id, note });
     const total = Number(updated.payment?.installmentPaidTotal || 0);
     const target = Number(updated.payment?.finalPrice || 0);
+
+    await require('../core/audit').log(interaction.client, { action: 'Installment Payment Added', actorId: interaction.user.id, order: updated, details: { 'المبلغ': amount, 'القسط': updated.payment.installment.paidCount + '/' + updated.payment.installment.count, 'ملاحظة': note || '—' } });
 
     if (total >= target && target > 0) {
       const orderHandler = require('./orderHandler');
@@ -193,7 +197,8 @@ module.exports = {
       return interaction.reply({ content: '❌ تاريخ العملاء متاح للإدارة المصرح لها فقط.', ephemeral: true });
     }
 
-    const orders = db.getOrdersByCustomer(order.customer.discordId);
+    const profile = db.getCustomerProfile(order.customer.discordId);
+    const orders = profile.orders;
     const embeds = require('../core/embeds');
     const customer = {
       id: order.customer.discordId,
@@ -201,7 +206,7 @@ module.exports = {
     };
 
     return interaction.reply({
-      embeds: [embeds.customerHistory(customer, orders)],
+      embeds: [embeds.customerHistory(customer, orders, profile)],
       ephemeral: true,
     });
   },
